@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "app/generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+AccountId Int @id @default(autoincrement())
+Username String 
+Password String
+HasTwoStep Boolean
+Email Email?
+User User?
+}
+
+model Email {
+EmailId Int @id @default(autoincrement())
+Id Int @unique
+Email Account @relation(fields: [Id], references: [AccountId])
+EmailString String
+}
+
+model User {
+UserId Int @id @default(autoincrement())
+Id Int @unique
+Account Account @relation(fields: [Id], references: [AccountId])
+DisplayName String
+FirstName String
+LastName String
+AccountType Int
+Staff Staff?
+Donor Donor?
+Admin Admin?
+}
+
+model Staff {
+StaffId Int @id @default(autoincrement())
+UserId Int @unique
+StaffAccount User @relation(fields: [UserId], references: [UserId])
+CharityId String
+AccountsAccess Boolean
+DonationsAccess Boolean
+InventoryAccess Boolean
+}
+
+model Donor {
+DonorId Int @id @default(autoincrement())
+UserId Int @unique
+DonorAccount User @relation(fields: [UserId], references: [UserId])
+PostalAdress String      
+}
+
+model Admin {
+AdminId Int @id @default(autoincrement())
+UserId Int @unique
+AdminAccount User @relation(fields: [UserId], references: [UserId])
+}
