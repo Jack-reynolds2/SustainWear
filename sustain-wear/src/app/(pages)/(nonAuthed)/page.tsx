@@ -99,6 +99,15 @@ export default async function LandingPage () {
 // src/app/(pages)/(nonAuthed)/page.tsx
 import Link from "next/link";
 import Image from "next/image";
+import {
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from '@clerk/nextjs'
+import { Button } from "@/components/ui/button";
 
 export const metadata = {
   title: "SustainWear — The Smarter Way to Donate",
@@ -108,6 +117,9 @@ export const metadata = {
 
 export default async function LandingPage() {
   return (
+    <ClerkProvider>
+
+    
     <main className="relative isolate overflow-hidden bg-white dark:bg-neutral-950">
       {/* subtle grid background */}
       <svg
@@ -151,31 +163,30 @@ export default async function LandingPage() {
             </span>
           </p>
 
-          {/* CTAs (use plain links; Clerk handles /sign-in & /sign-up) */}
+          {/*Clerk handles /sign-in & /sign-up) */}
           <div className="mt-10 flex flex-wrap items-center gap-4">
-            <Link
-              href="/sign-up"
-              className="inline-flex items-center justify-center rounded-md bg-green-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
-              aria-label="Create a SustainWear account"
-            >
-              Join the Movement
-            </Link>
-
-            <Link
-              href="/sign-in"
-              className="inline-flex items-center justify-center rounded-md border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 shadow-sm transition hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800"
-              aria-label="Sign in to your SustainWear dashboard"
-            >
-              Access Your Donation Hub
-            </Link>
-
-            <Link
-              href="#how-it-works"
-              className="ml-2 text-sm font-semibold text-neutral-900 underline-offset-4 hover:underline dark:text-neutral-100"
-            >
-              Learn more →
-            </Link>
+            <SignedOut>
+            {/* <div className="mt-10 flex items-center gap-x-6"> */}
+              <SignUpButton mode="modal">
+                <Button className="rounded-md bg-[#768755] px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-[#525e3b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                  Join the Movement
+                </Button>
+              </SignUpButton>
+              <SignInButton mode="modal">
+                <Button variant="outline" className="rounded-md px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-xs hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900">
+                    Access Your Donation Hub
+                </Button>
+              </SignInButton>
+            {/* </div> */}
+          </SignedOut>
           </div>
+        </div>
+        <div>
+          <Button variant="link" asChild>
+            <Link href="/charity" className="mt-6 inline-block text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+               I'm a Charity, Sign Me Up!<span aria-hidden="true">→</span>
+            </Link>
+          </Button>
         </div>
 
         {/* Right: Logo / visual */}
@@ -195,5 +206,6 @@ export default async function LandingPage() {
         </div>
       </section>
     </main>
+    </ClerkProvider>
   );
 }
