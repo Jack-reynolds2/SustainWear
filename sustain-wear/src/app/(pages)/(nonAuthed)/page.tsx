@@ -1,4 +1,7 @@
 // src/app/(pages)/(nonAuthed)/page.tsx
+'use server';
+
+import Layout from "./layout";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -12,17 +15,16 @@ import {
 } from '@clerk/nextjs'
 import { Button } from "@/components/ui/button";
 
-export const metadata = {
-  title: "SustainWear — The Smarter Way to Donate",
-  description:
-    "Donate clothes effortlessly, support charities, and keep textiles out of landfills with SustainWear.",
-};
+// export const metadata = {
+//   title: "SustainWear — The Smarter Way to Donate",
+//   description:
+//     "Donate clothes effortlessly, support charities, and keep textiles out of landfills with SustainWear.",
+// };
 
 export default async function LandingPage() {
   return (
-    <ClerkProvider>
+    // <ClerkProvider>
 
-    
     <main className="relative isolate overflow-hidden bg-white dark:bg-neutral-950">
       {/* subtle grid background */}
       <svg
@@ -43,16 +45,10 @@ export default async function LandingPage() {
         className="pointer-events-none absolute -top-24 right--10rem h-36rem w-36rem rounded-full bg-linear-to-tr from-emerald-300/30 via-teal-300/30 to-indigo-300/30 blur-3xl dark:from-emerald-500/20 dark:via-teal-500/20 dark:to-indigo-500/20"
       />
 
-      <section className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-28 pt-20 sm:pt-28 md:grid-cols-2 lg:gap-16 lg:px-8 lg:py-36">
-        {/* Left: Copy */}
+      <section className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-28 pt-20 sm:pt-28 md:grid-cols-2 lg:gap-5 lg:px-8 lg:py-36">
+        {/* Left: Column */}
         <div className="max-w-2xl animate-in fade-in duration-700">
-          {/* pill */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-950/60 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-indigo-300">
-            <span className="inline-block rounded-full bg-emerald-700/90 px-2 py-0.5 text-white">
-              What’s new
-            </span>
-            <span>Just shipped v1.0</span>
-          </div>
+
 
           <h1 className="mt-8 text-5xl font-semibold leading-tight tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-6xl">
             The Smarter Way to Donate.
@@ -68,34 +64,40 @@ export default async function LandingPage() {
 
           {/*Clerk handles /sign-in & /sign-up) */}
           <div className="mt-10 flex flex-wrap items-center gap-4">
+          <div className="mt-10 relative z-99 flex flex-row flex-wrap items-center gap-4">
             <SignedOut>
-              <SignUpButton mode="modal"> 
-                <Button className="rounded-md bg-[#768755] px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-[#525e3b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                
+              
+              <SignUpButton mode="modal">
+                <Button variant="outline" className="rounded-md bg-[#768755] px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-[#525e3b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
                   Join the Movement
                 </Button>
               </SignUpButton>
               <SignInButton mode="modal">
                 <Button variant="outline" className="rounded-md px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-xs hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900">
-                    Access Your Donation Hub
+                  Access Your Donation Hub
                 </Button>
               </SignInButton>
-            {/* </div> */}
-          </SignedOut>
+         </SignedOut>
+
+         <SignedIn>
+          <UserButton />
+         </SignedIn>
+
+
           </div>
-        </div>
-        <div>
-          {/* Button moved here so it appears below the logo on the right */}
-          <div className="mt-6 flex justify-center md:justify-start">
-            {/* <Button
+          <div className="mt-10 relative z-99 flex flex-row flex-wrap items-center gap-4">
+            <Button asChild
               variant="outline"
-              asChild
-              className="inline-block text-sm font-semibold text-neutral-900 dark:text-neutral-100"
+
+              className="inline-block text-sm font-semibold text-neutral-900 dark:text-emerald-100"
             >
               <Link href="/charity">
                 I'm a Charity, Sign Me Up!<span aria-hidden="true">→</span>
               </Link>
-            </Button> */}
+            </Button>
           </div>
+        </div>
         </div>
 
         {/* Right: Logo / visual */}
@@ -111,21 +113,11 @@ export default async function LandingPage() {
                 className="object-contain"
               />
             </div>
-            <div>
-            <Button
-              variant="outline"
-              asChild
-              className="inline-block text-sm font-semibold text-neutral-900 dark:text-neutral-100"
-            >
-              <Link href="/charity">
-                I'm a Charity, Sign Me Up!<span aria-hidden="true">→</span>
-              </Link>
-            </Button>
-            </div>
+
           </div>
         </div>
       </section>
     </main>
-    </ClerkProvider>
+    // </ClerkProvider>
   );
 }
