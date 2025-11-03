@@ -14,6 +14,7 @@ export default function DonatePage() {
   const [autoCategorized, setAutoCategorized] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
+  const [image, setImage] = useState<File | null>(null);
 
   // simple mock AI function
   const handleAutoCategorize = () => {
@@ -42,10 +43,10 @@ export default function DonatePage() {
     <>
       {/* top bar */}
       <header className="w-full bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800 p-4 flex justify-between items-center shadow-sm">
-        <h1 className="text-xl font-semibold text-[#768755]">SustainWear</h1>
+        <h1 className="text-xl font-semibold text-[#5c6d3a]">SustainWear</h1>
         <Link
           href="/"
-          className="text-gray-700 dark:text-gray-200 hover:text-[#768755] text-sm font-medium transition"
+          className="text-gray-800 dark:text-gray-200 hover:text-[#768755] text-sm font-medium transition"
         >
           ← Back to Home
         </Link>
@@ -112,12 +113,17 @@ export default function DonatePage() {
 
                 {/* upload */}
                 <div>
-                  <label className="block text-gray-700 dark:text-gray-300 font-medium mb-1">
+                  <label
+                    htmlFor="uploadImage" 
+                    className="block text-gray-700 dark:text-gray-300 font-medium mb-1"
+                  >
                     Upload Image
                   </label>
                   <input
+                    id="uploadImage"
                     type="file"
                     accept="image/*"
+                    onChange={(e) => setImage(e.target.files ? e.target.files[0] : null)}
                     className="w-full border rounded-md p-2 text-sm dark:bg-neutral-800 dark:border-neutral-700"
                   />
                 </div>
@@ -143,7 +149,7 @@ export default function DonatePage() {
                   <Button
                     type="button"
                     onClick={handleAutoCategorize}
-                    className="bg-[#768755] text-white hover:bg-[#5d6944]"
+                    className="bg-[#5c6d3a] text-white hover:bg-[#46542b]"
                   >
                     Auto-Categorise
                   </Button>
@@ -151,24 +157,43 @@ export default function DonatePage() {
 
                 {/* dropdowns */}
                 <div className="flex space-x-4">
+                  {/* category dropdown */}
+                  <div className="flex-1">
+                  <label
+                    htmlFor="category"
+                    className="block text-gray-700 dark:text-gray-300 font-medium mb-1"
+                  >
+                    Category
+                  </label>
                   <select
+                    id="category"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     required
-                    className="flex-1 border rounded-md p-2 dark:bg-neutral-800 dark:border-neutral-700"
+                    className="w-full border rounded-md p-2 dark:bg-neutral-800 dark:border-neutral-700"
                   >
-                    <option value="">Category</option>
+                    <option value="">Select Category</option>
                     <option value="Clothing">Clothing</option>
                     <option value="Footwear">Footwear</option>
                     <option value="Accessories">Accessories</option>
                     <option value="Other">Other</option>
                   </select>
+                  </div>
 
+                  {/* condition dropdown */}  
+                  <div className="flex-1">
+                  <label
+                    htmlFor="condition"
+                    className="block text-gray-700 dark:text-gray-300 font-medium mb-1"
+                  >
+                    Condition
+                  </label>
                   <select
+                    id="condition"
                     value={condition}
                     onChange={(e) => setCondition(e.target.value)}
                     required
-                    className="flex-1 border rounded-md p-2 dark:bg-neutral-800 dark:border-neutral-700"
+                    className="w-full border rounded-md p-2 dark:bg-neutral-800 dark:border-neutral-700"
                   >
                     <option value="">Condition</option>
                     <option value="New">New</option>
@@ -176,11 +201,11 @@ export default function DonatePage() {
                     <option value="Worn">Worn</option>
                   </select>
                 </div>
-
+                </div>
                 {/* submit */}
                 <Button
                   type="submit"
-                  className="w-full bg-[#768755] text-white hover:bg-[#5d6944] py-3 text-base font-medium rounded-md transition"
+                  className="w-full bg-[##5c6d3a] text-white hover:bg-[#46542b] py-3 text-base font-medium rounded-md transition"
                 >
                   Submit Donation
                 </Button>
