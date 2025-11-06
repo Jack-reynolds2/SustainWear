@@ -51,10 +51,10 @@ export default function DonatePage() {
         </div>
       </header>
 
-      {/* success popup */}
+      {/* Submitted Donation Success PopUp */}
       {showMessage && (
         <div className="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-md shadow-md text-sm transition-opacity duration-500 animate-fade-in">
-          ✅ Donation submitted successfully
+          Donation submitted successfully
         </div>
       )}
 
@@ -198,7 +198,7 @@ export default function DonatePage() {
             ) : (
               <div className="text-center space-y-6">
                 <h3 className="text-2xl font-semibold text-green-800 dark:text-emerald-400">
-                  Thank you for your donation! 💚
+                  Thank you for your donation!
                 </h3>
                 <p className="text-gray-700 dark:text-gray-300">
                   Your item <strong>{itemName}</strong> has been recorded under{" "}

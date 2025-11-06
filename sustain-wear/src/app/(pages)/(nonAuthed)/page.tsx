@@ -15,11 +15,7 @@ import {
 } from '@clerk/nextjs'
 import { Button } from "@/components/ui/button";
 
-// export const metadata = {
-//   title: "SustainWear — The Smarter Way to Donate",
-//   description:
-//     "Donate clothes effortlessly, support charities, and keep textiles out of landfills with SustainWear.",
-// };
+
 
 export default async function LandingPage() {
   return (
