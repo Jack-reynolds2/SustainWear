@@ -22,7 +22,7 @@ export default async function HomePage() {
   // Redirect based on role
   switch (user.platformRole) {
     case ROLES.DONOR:
-      redirect("/donate");
+      redirect("authed/donate");
       break;
     case ROLES.ORG_STAFF:
     case ROLES.ORG_ADMIN:
