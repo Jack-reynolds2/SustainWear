@@ -1,14 +1,14 @@
-import { redirect } from 'next/navigation';
-import { currentUser } from '@clerk/nextjs/server';
-import { getPrismaUserFromClerk } from '@/features/auth/userRoles/helpers';
-import { ROLES } from '@/features/constants/roles';
+import { redirect } from "next/navigation";
+import { currentUser } from "@clerk/nextjs/server";
+import { getPrismaUserFromClerk } from "@/features/auth/userRoles/helpers";
+import { ROLES } from "@/features/constants/roles";
 
 export default async function HomePage() {
   const clerkUser = await currentUser();
 
   if (!clerkUser) {
     // Not authenticated, redirect to non-authed page
-    redirect('/nonAuthed');
+    redirect("/nonAuthed");
   }
 
   // Authenticated, get user from Prisma
@@ -16,20 +16,20 @@ export default async function HomePage() {
 
   if (!user) {
     // User not in DB, perhaps initialize or redirect
-    redirect('/nonAuthed');
+    redirect("/nonAuthed");
   }
 
   // Redirect based on role
   switch (user.platformRole) {
     case ROLES.DONOR:
-      redirect('/donor');
+      redirect("/donate");
       break;
     case ROLES.ORG_STAFF:
     case ROLES.ORG_ADMIN:
     case ROLES.PLATFORM_ADMIN:
-      redirect('/charity');
+      redirect("/charity");
       break;
     default:
-      redirect('/nonAuthed');
+      redirect("/nonAuthed");
   }
 }
