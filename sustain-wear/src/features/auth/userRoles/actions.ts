@@ -1,7 +1,9 @@
+/*features/auth/userRole.ts*/
+
 'use server';
 
-import type { Role } from "/features/constants/roles";
-import {users } from ""  
+import type { Role } from "@/features/constants/roles";
+import { users } from "@/features/actions/users";  
 import { auth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs/server";
 
@@ -12,7 +14,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 export async function getUserRole(): Promise<string | null> {
   try {
     // Get the authenticated Clerk user ID from the session
-    const { userId } = auth();
+    const { userId } = await auth();
 
     if (!userId) {
       console.warn("[getUserRole] No user signed in.");
@@ -20,7 +22,8 @@ export async function getUserRole(): Promise<string | null> {
     }
 
     // Fetch the full Clerk user object
-    const user = await clerkClient.users.getUser(userId);
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
 
     if (!user) {
       console.error(`[getUserRole] Clerk user not found for ID: ${userId}`);

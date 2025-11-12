@@ -1,6 +1,3 @@
-// prisma/schema.prisma
-// Supports Clerk-based authentication, organisations, role-based access, and AI categorisation
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,19 +7,72 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// =====================================================
-// ENUMS
-// =====================================================
+model User {
+  id                         String     @id @default(cuid())
+  clerkUserId                String     @unique
+  email                      String     @unique
+  name                       String?
+  platformRole               Role       @default(DONOR)
+  defaultClerkOrganisationId String?
+  createdAt                  DateTime   @default(now())
+  updatedAt                  DateTime   @updatedAt
+  donations                  Donation[] @relation("DonorDonations")
 
-// Platform-wide and organisation-based roles
-enum Role {
-  DONOR             // standard user who donates items
-  ORG_STAFF         // staff member within an organisation
-  ORG_ADMIN         // administrator for a specific organisation
-  PLATFORM_ADMIN    // global system administrator
+  @@index([clerkUserId])
+  @@index([email])
 }
 
-// The status of a donation item
+model Organisation {
+  id                  String     @id @default(cuid())
+  clerkOrganisationId String     @unique
+  name                String
+  slug                String     @unique
+  approved            Boolean    @default(false)
+  description         String?
+  website             String?
+  contactEmail        String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  donations           Donation[]
+
+  @@index([clerkOrganisationId])
+  @@index([slug])
+}
+
+model Donation {
+  id                   String         @id @default(cuid())
+  imageUrl             String?
+  organisationId       String
+  donorUserId          String?
+  title                String
+  description          String?
+  brand                String?
+  colour               String?
+  sizeLabel            String?
+  category             Category
+  condition            Condition
+  season               Season?
+  status               DonationStatus @default(SUBMITTED)
+  aiCategorySuggestion String?
+  aiConfidenceScore    Float?
+  aiReviewed           Boolean        @default(false)
+  shippingQrCodeUrl    String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  donor                User?          @relation("DonorDonations", fields: [donorUserId], references: [id])
+  organisation         Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId, status])
+  @@index([donorUserId])
+}
+
+enum Role {
+  DONOR
+  ORG_STAFF
+  ORG_ADMIN
+  PLATFORM_ADMIN
+}
+
 enum DonationStatus {
   SUBMITTED
   UNDER_REVIEW
@@ -33,7 +83,6 @@ enum DonationStatus {
   ARCHIVED
 }
 
-// Clothing condition scale
 enum Condition {
   NEW
   LIKE_NEW
@@ -42,7 +91,6 @@ enum Condition {
   POOR
 }
 
-// Clothing type
 enum Category {
   TOPS
   BOTTOMS
@@ -53,89 +101,10 @@ enum Category {
   OTHER
 }
 
-// Clothing season
 enum Season {
   ALL_SEASONS
   SPRING
   SUMMER
   AUTUMN
   WINTER
-}
-
-// =====================================================
-// MODELS
-// =====================================================
-
-// Mirrors a Clerk user, adding platform role and optional default organisation
-model User {
-  id                           String      @id @default(cuid())
-  clerkUserId                  String      @unique
-  email                        String      @unique
-  name                         String?
-  platformRole                 Role        @default(DONOR)
-  defaultClerkOrganisationId   String?     // optional for routing into a default charity
-
-  donations                    Donation[]  @relation("DonorDonations")
-
-  createdAt                    DateTime    @default(now())
-  updatedAt                    DateTime    @updatedAt
-
-  @@index([clerkUserId])
-  @@index([email])
-}
-
-// Represents a charity or sustainability organisation
-model Organisation {
-  id                      String        @id @default(cuid())
-  clerkOrganisationId     String        @unique
-  name                    String
-  slug                    String        @unique
-  approved                Boolean       @default(false) // platform admin approves new orgs
-  description             String?
-  website                 String?
-  contactEmail            String?
-
-  donations               Donation[]
-
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
-
-  @@index([clerkOrganisationId])
-  @@index([slug])
-}
-
-// Represents a clothing donation
-model Donation {
-  id                      String         @id @default(cuid())
-  organisationId          String
-  organisation            Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-
-  donorUserId             String?
-  donor                   User?          @relation("DonorDonations", fields: [donorUserId], references: [id], onDelete: SetNull)
-
-  title                   String
-  description             String?
-  brand                   String?
-  colour                  String?
-  sizeLabel               String?
-
-  category                Category
-  condition               Condition
-  season                  Season?
-
-  status                  DonationStatus @default(SUBMITTED)
-
-  // For AI-assisted categorisation
-  aiCategorySuggestion    String?        // AI-predicted category (text)
-  aiConfidenceScore       Float?         // 0–1 confidence level
-  aiReviewed              Boolean        @default(false)
-
-  // Optional dummy shipping QR
-  shippingQrCodeUrl       String?
-
-  createdAt               DateTime       @default(now())
-  updatedAt               DateTime       @updatedAt
-
-  @@index([organisationId, status])
-  @@index([donorUserId])
 }

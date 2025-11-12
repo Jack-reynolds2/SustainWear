@@ -2,7 +2,7 @@
 
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "../../../prisma/client";
-import type { Role } from "../../../prisma/client";
+import { Role } from '@prisma/client';
 
 /**
  * Ensures the signed-in user exists in the Prisma DB.
@@ -23,10 +23,8 @@ export const initialiseNewUser = async () => {
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(clerkUserId);
 
-    // Import the Role enum from your Prisma client
-
     const platformRole =
-      (clerkUser.privateMetadata?.role as Role) || "DONOR"; // default fallback
+      (clerkUser.privateMetadata?.role as Role) || Role.DONOR; // default fallback
     const email =
       clerkUser.emailAddresses?.[0]?.emailAddress || "no-email@unknown.com";
     const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim();
@@ -42,10 +40,10 @@ export const initialiseNewUser = async () => {
       // Create new user in DB
       dbUser = await prisma.user.create({
         data: {
-          platformRole: platformRole as Role,
+          clerkUserId,
+          platformRole,
           email,
           name,
-          platformRole,
           defaultClerkOrganisationId,
         },
       });
@@ -97,4 +95,9 @@ export const fetchUser = async () => {
     console.error("Error in fetchUser:", error);
     throw error;
   }
+};
+
+export const users = {
+  initialiseNewUser,
+  fetchUser,
 };

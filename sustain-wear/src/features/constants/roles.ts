@@ -1,11 +1,11 @@
 // /constants/roles.ts
 
 export const ROLES = {
-    ADMIN: "AD",
-    DONOR: "DO",
-    CHARITY: "CH",
-    ORG_OWNER: "OO",
-  } as const;
-  
-  export type Role = (typeof ROLES)[keyof typeof ROLES];
+  DONOR: "DONOR",
+  ORG_STAFF: "ORG_STAFF",
+  ORG_ADMIN: "ORG_ADMIN",
+  PLATFORM_ADMIN: "PLATFORM_ADMIN",
+} as const;
+
+export type Role = (typeof ROLES)[keyof typeof ROLES];
   
