@@ -15,7 +15,7 @@ function Header() {
           Home
         </Link>
         <Link
-          href="/authed/donate"
+          href="/donate"
           className="hover:underline text-[#768755] font-medium"
         >
           Donate

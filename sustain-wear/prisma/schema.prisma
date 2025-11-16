@@ -8,54 +8,103 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Account {
-AccountId Int @id @default(autoincrement())
-Username String 
-Password String
-HasTwoStep Boolean
-Email Email?
-User User?
-}
-
-model Email {
-EmailId Int @id @default(autoincrement())
-Id Int @unique
-Email Account @relation(fields: [Id], references: [AccountId])
-EmailString String
-}
-
 model User {
-UserId Int @id @default(autoincrement())
-Id Int @unique
-Account Account @relation(fields: [Id], references: [AccountId])
-DisplayName String
-FirstName String
-LastName String
-AccountType Int
-Staff Staff?
-Donor Donor?
-Admin Admin?
+  id                         String     @id
+  clerkUserId                String     @unique
+  email                      String     @unique
+  name                       String?
+  platformRole               Role       @default(DONOR)
+  defaultClerkOrganisationId String?
+  createdAt                  DateTime   @default(now())
+  updatedAt                  DateTime
+  Donation                   Donation[]
+
+  @@index([clerkUserId])
+  @@index([email])
 }
 
-model Staff {
-StaffId Int @id @default(autoincrement())
-UserId Int @unique
-StaffAccount User @relation(fields: [UserId], references: [UserId])
-CharityId String
-AccountsAccess Boolean
-DonationsAccess Boolean
-InventoryAccess Boolean
+model Donation {
+  id                   String         @id
+  organisationId       String
+  donorUserId          String?
+  title                String
+  description          String?
+  brand                String?
+  colour               String?
+  sizeLabel            String?
+  category             Category
+  condition            Condition
+  season               Season?
+  status               DonationStatus @default(SUBMITTED)
+  aiCategorySuggestion String?
+  aiConfidenceScore    Float?
+  aiReviewed           Boolean        @default(false)
+  shippingQrCodeUrl    String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime
+  User                 User?          @relation(fields: [donorUserId], references: [id])
+  Organisation         Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([donorUserId])
+  @@index([organisationId, status])
 }
 
-model Donor {
-DonorId Int @id @default(autoincrement())
-UserId Int @unique
-DonorAccount User @relation(fields: [UserId], references: [UserId])
-PostalAdress String      
+model Organisation {
+  id                  String     @id
+  clerkOrganisationId String     @unique
+  name                String
+  slug                String     @unique
+  approved            Boolean    @default(false)
+  description         String?
+  website             String?
+  contactEmail        String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime
+  Donation            Donation[]
+
+  @@index([clerkOrganisationId])
+  @@index([slug])
 }
 
-model Admin {
-AdminId Int @id @default(autoincrement())
-UserId Int @unique
-AdminAccount User @relation(fields: [UserId], references: [UserId])
+enum Category {
+  TOPS
+  BOTTOMS
+  DRESSES
+  OUTERWEAR
+  SHOES
+  ACCESSORIES
+  OTHER
+}
+
+enum Condition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum DonationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SHIPPED
+  RECEIVED
+  ARCHIVED
+}
+
+enum Role {
+  DONOR
+  ORG_STAFF
+  ORG_ADMIN
+  PLATFORM_ADMIN
+}
+
+enum Season {
+  ALL_SEASONS
+  SPRING
+  SUMMER
+  AUTUMN
+  WINTER
 }
