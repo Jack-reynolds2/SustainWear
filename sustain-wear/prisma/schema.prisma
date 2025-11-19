@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "app/generated/prisma/client"
 }
 
 datasource db {
@@ -9,22 +8,40 @@ datasource db {
 }
 
 model User {
-  id                         String     @id
+  id                         String     @id @default(cuid())
   clerkUserId                String     @unique
   email                      String     @unique
   name                       String?
   platformRole               Role       @default(DONOR)
   defaultClerkOrganisationId String?
   createdAt                  DateTime   @default(now())
-  updatedAt                  DateTime
-  Donation                   Donation[]
+  updatedAt                  DateTime   @updatedAt
+  donations                  Donation[] @relation("DonorDonations")
 
   @@index([clerkUserId])
   @@index([email])
 }
 
+model Organisation {
+  id                  String     @id @default(cuid())
+  clerkOrganisationId String     @unique
+  name                String
+  slug                String     @unique
+  approved            Boolean    @default(false)
+  description         String?
+  website             String?
+  contactEmail        String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  donations           Donation[]
+
+  @@index([clerkOrganisationId])
+  @@index([slug])
+}
+
 model Donation {
-  id                   String         @id
+  id                   String         @id @default(cuid())
+  imageUrl             String?
   organisationId       String
   donorUserId          String?
   title                String
@@ -41,47 +58,19 @@ model Donation {
   aiReviewed           Boolean        @default(false)
   shippingQrCodeUrl    String?
   createdAt            DateTime       @default(now())
-  updatedAt            DateTime
-  User                 User?          @relation(fields: [donorUserId], references: [id])
-  Organisation         Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  updatedAt            DateTime       @updatedAt
+  donor                User?          @relation("DonorDonations", fields: [donorUserId], references: [id])
+  organisation         Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
-  @@index([donorUserId])
   @@index([organisationId, status])
+  @@index([donorUserId])
 }
 
-model Organisation {
-  id                  String     @id
-  clerkOrganisationId String     @unique
-  name                String
-  slug                String     @unique
-  approved            Boolean    @default(false)
-  description         String?
-  website             String?
-  contactEmail        String?
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime
-  Donation            Donation[]
-
-  @@index([clerkOrganisationId])
-  @@index([slug])
-}
-
-enum Category {
-  TOPS
-  BOTTOMS
-  DRESSES
-  OUTERWEAR
-  SHOES
-  ACCESSORIES
-  OTHER
-}
-
-enum Condition {
-  NEW
-  LIKE_NEW
-  GOOD
-  FAIR
-  POOR
+enum Role {
+  DONOR
+  ORG_STAFF
+  ORG_ADMIN
+  PLATFORM_ADMIN
 }
 
 enum DonationStatus {
@@ -94,11 +83,22 @@ enum DonationStatus {
   ARCHIVED
 }
 
-enum Role {
-  DONOR
-  ORG_STAFF
-  ORG_ADMIN
-  PLATFORM_ADMIN
+enum Condition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum Category {
+  TOPS
+  BOTTOMS
+  DRESSES
+  OUTERWEAR
+  SHOES
+  ACCESSORIES
+  OTHER
 }
 
 enum Season {
