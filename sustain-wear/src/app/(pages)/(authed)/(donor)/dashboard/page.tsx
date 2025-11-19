@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getMyDonations } from "../donate/actions";
+import DeleteButton from "./DeleteButton";
+
 
 // Donor dashboard page showing donation stats and history
 export default async function DonorDashboard() {
@@ -60,6 +62,7 @@ export default async function DonorDashboard() {
                 <th className="p-3 text-left">Item</th>
                 <th className="p-3 text-left">Date</th>
                 <th className="p-3 text-left">Edit</th>
+                <th className="p-3 text-left">Delete</th>
                 <th className="p-3 text-left">Status</th>
               </tr>
             </thead>
@@ -86,13 +89,18 @@ export default async function DonorDashboard() {
                       </Link>
                     </td>
 
+                    {/* Delete */}
+                    <td className="p-3">
+                      <DeleteButton donationId={d.id} />
+                    </td>
+
                     {/* Status */}
                     <td className="p-3 text-yellow-700">{d.status}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="text-center p-3 text-sm text-gray-500">
+                  <td colSpan={5} className="text-center p-3 text-sm text-gray-500">
                     No pending donations.
                   </td>
                 </tr>

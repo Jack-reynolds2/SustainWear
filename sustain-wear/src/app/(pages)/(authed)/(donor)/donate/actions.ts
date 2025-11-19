@@ -187,3 +187,38 @@ export async function updateDonation(formData: FormData) {
   // Redirect back to dashboard after update
   redirect("/dashboard");
 }
+
+// Server action to delete a donation
+export async function deleteDonation(formData: FormData) {
+  const clerkUser = await currentUser();
+  if (!clerkUser) throw new Error("Not signed in");
+
+  const donationId = formData.get("donationId") as string;
+
+  // get DB user
+  const dbUser = await prisma.user.findUnique({
+    where: { clerkUserId: clerkUser.id },
+  });
+
+  if (!dbUser) throw new Error("User not found");
+
+  // find donation
+  const donation = await prisma.donation.findUnique({
+    where: { id: donationId },
+  });
+
+  if (!donation) throw new Error("Donation not found");
+
+  // ensure ownership
+  if (donation.donorUserId !== dbUser.id) {
+    throw new Error("Not allowed");
+  }
+
+  // delete
+  await prisma.donation.delete({
+    where: { id: donationId },
+  });
+
+  // refresh dashboard
+  redirect("/dashboard");
+}
