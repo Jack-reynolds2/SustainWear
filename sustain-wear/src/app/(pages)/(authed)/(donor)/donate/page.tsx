@@ -196,8 +196,6 @@ export default function DonatePage() {
           </SignedIn>
         </section>
       </main>
-
-
     </>
   );
 }
