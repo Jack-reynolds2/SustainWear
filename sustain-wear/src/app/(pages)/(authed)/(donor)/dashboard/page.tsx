@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getMyDonations } from "../donate/actions";
+import DeleteButton from "./DeleteButton";
+
 
 // Donor dashboard page showing donation stats and history
 export default async function DonorDashboard() {
@@ -59,6 +61,8 @@ export default async function DonorDashboard() {
               <tr>
                 <th className="p-3 text-left">Item</th>
                 <th className="p-3 text-left">Date</th>
+                <th className="p-3 text-left">Edit</th>
+                <th className="p-3 text-left">Delete</th>
                 <th className="p-3 text-left">Status</th>
               </tr>
             </thead>
@@ -66,16 +70,37 @@ export default async function DonorDashboard() {
               {pending.length ? (
                 pending.map((d: any) => (
                   <tr key={d.id} className="border-t">
+
+                    {/* Item */}
                     <td className="p-3">{d.title}</td>
+
+                    {/* Date */}
                     <td className="p-3">
                       {new Date(d.createdAt).toLocaleDateString()}
                     </td>
+
+                    {/* Edit */}
+                    <td className="p-3">
+                      <Link
+                        href={`/donate/${d.id}/edit`}
+                        className="text-blue-600 underline text-sm"
+                      >
+                        Edit
+                      </Link>
+                    </td>
+
+                    {/* Delete */}
+                    <td className="p-3">
+                      <DeleteButton donationId={d.id} />
+                    </td>
+
+                    {/* Status */}
                     <td className="p-3 text-yellow-700">{d.status}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="text-center p-3 text-sm text-gray-500">
+                  <td colSpan={5} className="text-center p-3 text-sm text-gray-500">
                     No pending donations.
                   </td>
                 </tr>
@@ -92,6 +117,7 @@ export default async function DonorDashboard() {
               <tr>
                 <th className="p-3 text-left">Item</th>
                 <th className="p-3 text-left">Date</th>
+                <th className="p-3 text-left">Edit</th>
                 <th className="p-3 text-left">Status</th>
               </tr>
             </thead>
@@ -99,16 +125,32 @@ export default async function DonorDashboard() {
               {past.length ? (
                 past.map((d: any) => (
                   <tr key={d.id} className="border-t">
+
+                    {/* Item */}
                     <td className="p-3">{d.title}</td>
+
+                    {/* Date */}
                     <td className="p-3">
                       {new Date(d.createdAt).toLocaleDateString()}
                     </td>
+
+                    {/* Edit (optional for past donations) */}
+                    <td className="p-3">
+                      <Link
+                        href={`/donate/${d.id}/edit`}
+                        className="text-blue-600 underline text-sm"
+                      >
+                        Edit
+                      </Link>
+                    </td>
+
+                    {/* Status */}
                     <td className="p-3 text-green-700">{d.status}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="text-center p-3 text-sm text-gray-500">
+                  <td colSpan={4} className="text-center p-3 text-sm text-gray-500">
                     No past donations.
                   </td>
                 </tr>
@@ -116,6 +158,7 @@ export default async function DonorDashboard() {
             </tbody>
           </table>
         </div>
+
       </section>
     </main>
   );

@@ -15,7 +15,7 @@ export default async function RecentDonations() {
   return (
     <section className="mt-16 w-full max-w-2xl">
       <h2 className="text-2xl font-semibold mb-4">Recent Donations</h2>
-     
+
       {/* List of recent donations */}
       <ul className="space-y-3">
         {donations.map((d: any) => (
@@ -47,6 +47,7 @@ export default async function RecentDonations() {
                 </p>
               </div>
             </div>
+
           </li>
         ))}
       </ul>
