@@ -1,4 +1,4 @@
-import { getDonationById, updateDonation } from "../../actions"; 
+import { getDonationById, updateDonation } from "../../actions";
 
 export default async function EditDonationPage({ params }: { params: { id: string } }) {
   const donationId = (await params).id;
