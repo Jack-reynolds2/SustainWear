@@ -23,12 +23,14 @@ export default async function HomePage() {
   switch (user.platformRole) {
     case ROLES.DONOR:
       redirect("/dashboard");
-      break;
+      
     case ROLES.ORG_STAFF:
     case ROLES.ORG_ADMIN:
+     redirect("/charity");
+      
     case ROLES.PLATFORM_ADMIN:
-      redirect("/charity");
-      break;
+      redirect("/admin");
+      
     default:
       redirect("/nonAuthed");
   }
