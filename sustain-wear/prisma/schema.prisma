@@ -41,7 +41,6 @@ model Organisation {
 
 model Donation {
   id                   String         @id @default(cuid())
-  imageUrl             String?
   organisationId       String
   donorUserId          String?
   title                String
@@ -59,6 +58,7 @@ model Donation {
   shippingQrCodeUrl    String?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
+  imageUrl             String?
   donor                User?          @relation("DonorDonations", fields: [donorUserId], references: [id])
   organisation         Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
