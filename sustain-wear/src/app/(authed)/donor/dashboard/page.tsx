@@ -1,6 +1,9 @@
+'use server';
+
 import Link from "next/link";
 import { getMyDonations } from "../../../../features/actions/donateCRUD";
 import DeleteButton from "../../../../components/ui/DeleteButton";
+import type { ReactNode } from "react";
 
 
 // Donor dashboard page showing donation stats and history

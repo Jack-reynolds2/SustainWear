@@ -1,5 +1,7 @@
+'use server';
+
 import { redirectUserByRole } from "@/features/auth/redirect";
 
-export async function GET() {
+export default async function GET() {
   await redirectUserByRole();
 }
