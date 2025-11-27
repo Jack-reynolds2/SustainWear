@@ -71,6 +71,7 @@ enum Role {
   ORG_STAFF
   ORG_ADMIN
   PLATFORM_ADMIN
+  DEVELOPER
 }
 
 enum DonationStatus {

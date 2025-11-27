@@ -4,7 +4,7 @@ import { SignedIn, UserButton } from "@clerk/nextjs";
 
 function Header() {
   return (
-    <header className="w-full flex z-[99] absolute p-2">
+    <header className="w-full flex z-99 absolute p-2">
             <div className="w-full">
         
       </div>
