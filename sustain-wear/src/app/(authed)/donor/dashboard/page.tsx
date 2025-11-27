@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { getMyDonations } from "../donate/actions";
-import DeleteButton from "./DeleteButton";
+import { getMyDonations } from "../../../../features/actions/donateCRUD";
+import DeleteButton from "../../../../components/ui/DeleteButton";
 
 
 // Donor dashboard page showing donation stats and history

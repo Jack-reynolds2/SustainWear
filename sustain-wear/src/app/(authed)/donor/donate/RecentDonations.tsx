@@ -1,4 +1,4 @@
-import { getMyDonations } from "./actions";
+import { getMyDonations } from "../../../../features/actions/donateCRUD";
 
 // Component to display recent donations made by the user
 export default async function RecentDonations() {

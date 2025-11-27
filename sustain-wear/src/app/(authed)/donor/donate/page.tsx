@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-import { registerDonation } from "./actions";
+import { registerDonation } from "../../../../features/actions/donateCRUD";
 
 export default function DonatePage() {
   // Form state

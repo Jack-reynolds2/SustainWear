@@ -1,6 +1,6 @@
 "use client";
 
-import { deleteDonation } from "../donate/actions";
+import { deleteDonation } from "../../features/actions/donateCRUD";
 
 export default function DeleteButton({ donationId }: { donationId: string }) {
     return (
