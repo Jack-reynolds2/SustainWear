@@ -1,5 +1,4 @@
 "use server";
-
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "../../../../prisma/client";
 import { ROLES } from "../../constants/roles";
@@ -34,6 +33,20 @@ export const initialiseNewUser = async () => {
 
   return user;
 };
+
+
+
+export async function canCurrentUserViewTeam(): Promise<boolean> {
+  const clerkUser = await currentUser();
+  if (!clerkUser) return false;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { clerkUserId: clerkUser.id },
+    select: { platformRole: true },
+  });
+
+  return dbUser?.platformRole === "ORG_ADMIN" || dbUser?.platformRole === "PLATFORM_ADMIN";
+}
 
 /**
  * Get the Prisma user for the current session.
