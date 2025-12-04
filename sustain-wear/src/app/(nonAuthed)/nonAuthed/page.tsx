@@ -10,6 +10,7 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import CharitySignupModal from "@/components/Modals/CharitySignupModal";
 
 export default async function LandingPage() {
   return (
@@ -51,7 +52,7 @@ export default async function LandingPage() {
                 <SignUpButton mode="modal">
                   <Button
                     variant="outline"
-                    className="rounded-md bg-[#768755] px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-[#525e3b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    className="rounded-md bg-[#768755] px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-[#525e3b]"
                   >
                     Join the Movement
                   </Button>
@@ -59,7 +60,7 @@ export default async function LandingPage() {
                 <SignInButton mode="modal">
                   <Button
                     variant="outline"
-                    className="rounded-md px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-xs hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
+                    className="rounded-md px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-xs hover:bg-gray-100"
                   >
                     Access Your Donation Hub
                   </Button>
@@ -70,12 +71,9 @@ export default async function LandingPage() {
                 <UserButton />
               </SignedIn>
             </div>
+
             <div className="mt-10 relative z-50 flex flex-row flex-wrap items-center gap-4">
-              <Button asChild variant="outline" className="inline-block text-sm font-semibold text-neutral-900 dark:text-emerald-100">
-                <Link href="/charity">
-                  I'm a Charity, Sign Me Up!<span aria-hidden="true">→</span>
-                </Link>
-              </Button>
+              <CharitySignupModal />
             </div>
           </div>
         </div>
