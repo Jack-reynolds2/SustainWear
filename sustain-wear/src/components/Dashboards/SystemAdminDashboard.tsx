@@ -22,12 +22,16 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Bell } from "lucide-react";
+import React from "react";
 
 // 🔔 your modal
 import SysAdminNotificitonModal, {
   CharityApplication,
 } from "@/components/Modals/SysAdminNotificationModal";
 
+interface Props {
+  initialApplications?: CharityApplication[];
+}
 // Labels only – values will come from server data later
 const overviewStats = [
   { label: "Total Users", value: null },
@@ -49,13 +53,16 @@ const systemHealth = {
   errorCount24h: null as number | null,
 };
 
-export default function SystemAdminDashboard() {
+export default function SystemAdminDashboard({initialApplications}: Props) {
+  
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState<string | "ALL">("ALL");
 
   // 🔔 charity applications modal state – replace with real data later
   const [applicationsOpen, setApplicationsOpen] = useState(false);
-  const [applications, setApplications] = useState<CharityApplication[]>([
+  const [applications, setApplications] = useState<CharityApplication[]>(
+    initialApplications || []
+  );
     // TODO: hydrate from server actions / Prisma
     // Example:
     // {
@@ -67,7 +74,7 @@ export default function SystemAdminDashboard() {
     //   submittedByName: "Alice Example",
     //   notes: "Focus on textile recycling in Sheffield.",
     // },
-  ]);
+  
 
   const pendingApplicationsCount = applications.filter(
     (a) => a.status === "PENDING"
@@ -204,20 +211,28 @@ export default function SystemAdminDashboard() {
               </div>
 
               {/* 🔔 Applications button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setApplicationsOpen(true)}
-                className="inline-flex items-center gap-2"
-              >
-                <Bell className="h-4 w-4" />
-                Charity applications
-                {pendingApplicationsCount > 0 && (
-                  <Badge className="ml-1 text-[10px]">
-                    {pendingApplicationsCount} pending
-                  </Badge>
-                )}
-              </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setApplicationsOpen(true)}
+        className="inline-flex items-center gap-2"
+      >
+        <p>Pending applications:{applications.filter(a => a.status === "PENDING").length }</p>
+        <Bell className="h-4 w-4" />
+        Charity applications
+        {pendingApplicationsCount > 0 && (
+          <>
+            <Badge className="ml-1 text-[10px]">
+              {pendingApplicationsCount} pending
+            </Badge>
+            <SysAdminNotificitonModal
+              open={false}
+              onOpenChange={() => {}}
+              applications={applications}
+            />
+          </>
+        )}
+      </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-md border">
