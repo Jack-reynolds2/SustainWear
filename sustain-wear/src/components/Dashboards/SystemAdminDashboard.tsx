@@ -21,6 +21,12 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { Bell } from "lucide-react";
+
+// 🔔 your modal
+import SysAdminNotificitonModal, {
+  CharityApplication,
+} from "@/components/Modals/SysAdminNotificationModal";
 
 // Labels only – values will come from server data later
 const overviewStats = [
@@ -47,8 +53,28 @@ export default function SystemAdminDashboard() {
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState<string | "ALL">("ALL");
 
+  // 🔔 charity applications modal state – replace with real data later
+  const [applicationsOpen, setApplicationsOpen] = useState(false);
+  const [applications, setApplications] = useState<CharityApplication[]>([
+    // TODO: hydrate from server actions / Prisma
+    // Example:
+    // {
+    //   id: "app_1",
+    //   name: "Green Futures Charity",
+    //   submittedAt: new Date(),
+    //   status: "PENDING",
+    //   contactEmail: "hello@greenfutures.org",
+    //   submittedByName: "Alice Example",
+    //   notes: "Focus on textile recycling in Sheffield.",
+    // },
+  ]);
+
+  const pendingApplicationsCount = applications.filter(
+    (a) => a.status === "PENDING"
+  ).length;
+
   // Once you have real data, filter `users` here
-  const filteredUsers = users; 
+  const filteredUsers = users;
 
   return (
     <div className="space-y-6">
@@ -169,8 +195,29 @@ export default function SystemAdminDashboard() {
         {/* Charities tab */}
         <TabsContent value="charities" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Charity organisations</CardTitle>
+            <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle>Charity organisations</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Manage approved charities and review new applications.
+                </p>
+              </div>
+
+              {/* 🔔 Applications button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setApplicationsOpen(true)}
+                className="inline-flex items-center gap-2"
+              >
+                <Bell className="h-4 w-4" />
+                Charity applications
+                {pendingApplicationsCount > 0 && (
+                  <Badge className="ml-1 text-[10px]">
+                    {pendingApplicationsCount} pending
+                  </Badge>
+                )}
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-md border">
@@ -203,6 +250,29 @@ export default function SystemAdminDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* 🔔 Modal instance */}
+          <SysAdminNotificitonModal
+            open={applicationsOpen}
+            onOpenChange={setApplicationsOpen}
+            applications={applications}
+            onApprove={(id) => {
+              setApplications((prev) =>
+                prev.map((app) =>
+                  app.id === id ? { ...app, status: "APPROVED" } : app
+                )
+              );
+              // later: call server action to persist
+            }}
+            onReject={(id) => {
+              setApplications((prev) =>
+                prev.map((app) =>
+                  app.id === id ? { ...app, status: "REJECTED" } : app
+                )
+              );
+              // later: call server action to persist
+            }}
+          />
         </TabsContent>
 
         {/* Reports tab */}
