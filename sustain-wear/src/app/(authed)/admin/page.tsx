@@ -1,4 +1,4 @@
-// src/app/system-admin/page.tsx   (or your actual admin route)
+// src/app/system-admin/page.tsx   
 import { prisma } from "@/lib/prisma";
 import SystemAdminDashboard from "@/components/Dashboards/SystemAdminDashboard";
 import React from "react";
