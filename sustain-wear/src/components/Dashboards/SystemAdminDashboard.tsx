@@ -217,7 +217,7 @@ export default function SystemAdminDashboard({initialApplications}: Props) {
         onClick={() => setApplicationsOpen(true)}
         className="inline-flex items-center gap-2"
       >
-        <p>Pending applications:{applications.filter(a => a.status === "PENDING").length }</p>
+        
         <Bell className="h-4 w-4" />
         Charity applications
         {pendingApplicationsCount > 0 && (
