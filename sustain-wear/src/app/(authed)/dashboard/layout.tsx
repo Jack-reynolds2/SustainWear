@@ -19,7 +19,7 @@ export default function DonorLayout({
         {/* Middle Navigation */}
         <nav className="flex space-x-6">
           <Link
-            href="/donate"
+            href="/donor/donate"
             className="hover:underline text-[#768755] font-medium"
           >
             Donate
