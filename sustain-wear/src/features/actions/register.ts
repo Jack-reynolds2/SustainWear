@@ -1,32 +1,32 @@
 "use server";
 
+// // src/features/actions/register.ts
+
 import { prisma } from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server";
 
 export async function submitCharityRegistration(formData: FormData) {
-  const user = await currentUser();
 
-  const orgName = String(formData.get("orgName") || "");
-  const contactName = String(formData.get("contactName") || "");
-  const contactEmail = String(formData.get("contactEmail") || "");
-  const website = formData.get("website") ? String(formData.get("website")) : null;
-  const message = formData.get("message") ? String(formData.get("message")) : null;
+  const organisationName = formData.get("organisationName") as string;
+  const charityNumber = formData.get("charityNumber") as string;
+  const contactName = formData.get("contactName") as string;
+  const contactEmail = formData.get("contactEmail") as string;
+  const website = formData.get("website") as string | null;
+  const mission = formData.get("mission") as string | null;
 
-  if (!orgName || !contactName || !contactEmail) {
-    throw new Error("Missing required fields");
-  }
+  const messageLines = [
+    mission && `Mission: ${mission}`,
+    charityNumber && `Charity number: ${charityNumber}`,
+  ].filter(Boolean);
+
+  const message = messageLines.length ? messageLines.join("\n") : null;
 
   await prisma.charityApplication.create({
     data: {
-      orgName,
+      orgName: organisationName,
       contactName,
       contactEmail,
       website: website || undefined,
       message: message || undefined,
-      
     },
   });
-
-  // You can return something to show a success message in the UI
-  return { ok: true };
 }

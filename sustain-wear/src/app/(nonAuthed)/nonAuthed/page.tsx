@@ -10,6 +10,7 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import { Toaster } from "@/components/ui/sonner";
 import CharitySignupModal from "@/components/Modals/CharitySignupModal";
 
 export default async function LandingPage() {
