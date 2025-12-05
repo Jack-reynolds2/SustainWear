@@ -5,34 +5,32 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Inbox, Check, X, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { ExternalLink, Inbox, Loader2 } from "lucide-react";
+import { ApplicationStatus } from "@prisma/client";
 
-export type CharityApplicationStatus = "PENDING" | "APPROVED" | "REJECTED";
-
-export type CharityApplication = {
+export interface CharityApplication {
   id: string;
   name: string;
-  slug?: string | null;
   website?: string | null;
-  contactEmail?: string | null;
-  submittedAt: string | Date;
-  status: CharityApplicationStatus;
-  submittedByName?: string | null;
-  submittedByEmail?: string | null;
-  notes?: string | null;
-};
+  contactEmail: string;
+  submittedAt: Date;
+  status: ApplicationStatus;
+  message?: string | null;
+}
 
 type SysAdminNotificitonModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   applications: CharityApplication[];
-  onApprove?: (id: string) => void;
-  onReject?: (id: string) => void;
+  onApprove: (id: string) => Promise<void>;
+  onReject: (id: string) => Promise<void>;
 };
 
 export default function SysAdminNotificitonModal({
@@ -42,6 +40,26 @@ export default function SysAdminNotificitonModal({
   onApprove,
   onReject,
 }: SysAdminNotificitonModalProps) {
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const handleApprove = async (id: string) => {
+    setProcessingId(id);
+    try {
+      await onApprove(id);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    setProcessingId(id);
+    try {
+      await onReject(id);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const pendingApplications = applications.filter(
     (app) => app.status === "PENDING"
   );
@@ -90,7 +108,7 @@ export default function SysAdminNotificitonModal({
               </p>
             )}
 
-            {applications.map((app) => (
+            {applications.map((app, index) => (
               <div
                 key={app.id}
                 className="rounded-lg border bg-background px-4 py-3 text-sm"
@@ -115,11 +133,6 @@ export default function SysAdminNotificitonModal({
                         </Badge>
                       )}
                     </div>
-                    {app.slug && (
-                      <p className="text-[11px] text-muted-foreground">
-                        Slug: {app.slug}
-                      </p>
-                    )}
                     {app.website && (
                       <a
                         href={app.website}
@@ -135,51 +148,49 @@ export default function SysAdminNotificitonModal({
 
                   <div className="text-right text-[11px] text-muted-foreground">
                     <p>Submitted: {formatDate(app.submittedAt)}</p>
-                    {app.submittedByName && (
-                      <p>By: {app.submittedByName}</p>
-                    )}
-                    {!app.submittedByName && app.submittedByEmail && (
-                      <p>By: {app.submittedByEmail}</p>
-                    )}
                   </div>
                 </div>
 
                 <div className="mt-2 grid gap-2 text-xs md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:items-end">
                   <div className="space-y-1">
-                    {app.contactEmail && (
-                      <p>
-                        <span className="font-medium">Contact:</span>{" "}
-                        <span className="text-muted-foreground">
-                          {app.contactEmail}
-                        </span>
-                      </p>
-                    )}
-                    {app.notes && (
+                    <p>
+                      <span className="font-medium">Contact:</span>{" "}
+                      <span className="text-muted-foreground">
+                        {app.contactEmail}
+                      </span>
+                    </p>
+                    {app.message && (
                       <p className="text-muted-foreground">
-                        <span className="font-medium">Notes:</span>{" "}
-                        {app.notes}
+                        <span className="font-medium">Message:</span>{" "}
+                        {app.message}
                       </p>
                     )}
                   </div>
 
                   <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onReject?.(app.id)}
-                      disabled={app.status !== "PENDING" || !onReject}
-                    >
-                      <X className="mr-1 h-3 w-3" />
-                      Reject
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => onApprove?.(app.id)}
-                      disabled={app.status !== "PENDING" || !onApprove}
-                    >
-                      <Check className="mr-1 h-3 w-3" />
-                      Approve
-                    </Button>
+                    <div className="mt-4 flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleReject(app.id)}
+                        disabled={processingId === app.id}
+                      >
+                        {processingId === app.id && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprove(app.id)}
+                        disabled={processingId === app.id}
+                      >
+                        {processingId === app.id && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Approve
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

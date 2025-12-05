@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -21,17 +21,34 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Bell } from "lucide-react";
+import { Bell, MoreHorizontal } from "lucide-react";
 import React from "react";
 
-// 🔔 your modal
 import SysAdminNotificitonModal, {
   CharityApplication,
 } from "@/components/Modals/SysAdminNotificationModal";
 
+import {
+  approveCharityApplication,
+  getCharityApplications,
+  rejectCharityApplication,
+  deleteCharity,
+} from "@/features/actions/CharityApplication";
+import { toast } from "sonner";
+import { Organisation } from "@prisma/client";
+import DeleteCharityModal from "../Modals/DeleteCharityModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 interface Props {
   initialApplications?: CharityApplication[];
+  initialCharities?: Organisation[];
 }
+
 // Labels only – values will come from server data later
 const overviewStats = [
   { label: "Total Users", value: null },
@@ -42,7 +59,6 @@ const overviewStats = [
 
 // Empty arrays – to be replaced with real data from server actions
 const users: any[] = [];
-const charities: any[] = [];
 const reports: any[] = [];
 const auditLog: any[] = [];
 
@@ -53,28 +69,29 @@ const systemHealth = {
   errorCount24h: null as number | null,
 };
 
-export default function SystemAdminDashboard({initialApplications}: Props) {
-  
+export default function SystemAdminDashboard({
+  initialApplications,
+  initialCharities,
+}: Props) {
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState<string | "ALL">("ALL");
 
-  // 🔔 charity applications modal state – replace with real data later
+  // Charity state
   const [applicationsOpen, setApplicationsOpen] = useState(false);
   const [applications, setApplications] = useState<CharityApplication[]>(
     initialApplications || []
   );
-    // TODO: hydrate from server actions / Prisma
-    // Example:
-    // {
-    //   id: "app_1",
-    //   name: "Green Futures Charity",
-    //   submittedAt: new Date(),
-    //   status: "PENDING",
-    //   contactEmail: "hello@greenfutures.org",
-    //   submittedByName: "Alice Example",
-    //   notes: "Focus on textile recycling in Sheffield.",
-    // },
-  
+  const [charities, setCharities] = useState<Organisation[]>(
+    initialCharities || []
+  );
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedCharity, setSelectedCharity] = useState<Organisation | null>(
+    null
+  );
+
+  useEffect(() => {
+    setCharities(initialCharities || []);
+  }, [initialCharities]);
 
   const pendingApplicationsCount = applications.filter(
     (a) => a.status === "PENDING"
@@ -210,29 +227,21 @@ export default function SystemAdminDashboard({initialApplications}: Props) {
                 </p>
               </div>
 
-              {/* 🔔 Applications button */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setApplicationsOpen(true)}
-        className="inline-flex items-center gap-2"
-      >
-        
-        <Bell className="h-4 w-4" />
-        Charity applications
-        {pendingApplicationsCount > 0 && (
-          <>
-            <Badge className="ml-1 text-[10px]">
-              {pendingApplicationsCount} pending
-            </Badge>
-            <SysAdminNotificitonModal
-              open={false}
-              onOpenChange={() => {}}
-              applications={applications}
-            />
-          </>
-        )}
-      </Button>
+              {/* bell Applications button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setApplicationsOpen(true)}
+                className="inline-flex items-center gap-2"
+              >
+                <Bell className="h-4 w-4" />
+                Charity applications
+                {pendingApplicationsCount > 0 && (
+                  <Badge className="ml-1 text-[10px]">
+                    {pendingApplicationsCount} pending
+                  </Badge>
+                )}
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-md border">
@@ -260,32 +269,155 @@ export default function SystemAdminDashboard({initialApplications}: Props) {
                         </TableCell>
                       </TableRow>
                     )}
+                    {charities.map((charity) => (
+                      <TableRow key={charity.id}>
+                        <TableCell>{charity.name}</TableCell>
+                        <TableCell>
+                          {/* Replace with actual contact when available */}
+                          <span className="text-muted-foreground">—</span>
+                        </TableCell>
+                        <TableCell>{charity.contactEmail}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              charity.approved ? "default" : "destructive"
+                            }
+                            className={
+                              charity.approved
+                                ? "bg-green-600"
+                                : "bg-yellow-600"
+                            }
+                          >
+                            {charity.approved ? "Approved" : "Pending"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {/* Replace with staff count */}
+                          <span className="text-muted-foreground">—</span>
+                        </TableCell>
+                        <TableCell>
+                          {/* Replace with donation count */}
+                          <span className="text-muted-foreground">—</span>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(charity.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedCharity(charity);
+                                  setDeleteModalOpen(true);
+                                }}
+                                className="text-red-600"
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
             </CardContent>
           </Card>
 
-          {/* 🔔 Modal instance */}
+          {/* Modal instances */}
           <SysAdminNotificitonModal
             open={applicationsOpen}
             onOpenChange={setApplicationsOpen}
             applications={applications}
-            onApprove={(id) => {
+            onApprove={async (id) => {
+              const application = applications.find((app) => app.id === id);
+              if (!application) return;
+
+              // Optimistic UI update
               setApplications((prev) =>
                 prev.map((app) =>
                   app.id === id ? { ...app, status: "APPROVED" } : app
                 )
               );
-              // later: call server action to persist
+
+              try {
+                const result = await approveCharityApplication(id);
+
+                if (result.success && result.tempPassword && result.newOrganisation) {
+                  // On success, show detailed toast and update charities list
+                  toast.success("Charity approved successfully!", {
+                    description: `Login Email: ${application.contactEmail} | Temp Password: ${result.tempPassword}`,
+                    duration: 15000, // Show for 15 seconds
+                  });
+                  setCharities((prev) => [...prev, result.newOrganisation]);
+                } else {
+                  // On failure from the action, revert and show error
+                  toast.error(
+                    result.error || "Failed to approve charity. Please check logs."
+                  );
+                  setApplications((prev) =>
+                    prev.map((app) =>
+                      app.id === id ? { ...app, status: "PENDING" } : app
+                    )
+                  );
+                }
+              } catch (error) {
+                // On unexpected exception, revert and show generic error
+                console.error("Error during charity approval:", error);
+                toast.error("An unexpected error occurred. Please try again.");
+                setApplications((prev) =>
+                  prev.map((app) =>
+                    app.id === id ? { ...app, status: "PENDING" } : app
+                  )
+                );
+              }
             }}
-            onReject={(id) => {
+            onReject={async (id) => {
+              // optimistic UI update
               setApplications((prev) =>
                 prev.map((app) =>
                   app.id === id ? { ...app, status: "REJECTED" } : app
                 )
               );
-              // later: call server action to persist
+
+              try {
+                await rejectCharityApplication(id);
+                toast.success("Charity application rejected.");
+              } catch (error) {
+                console.error(error);
+                toast.error("Failed to reject charity. Please try again.");
+                // revert optimistic update
+                setApplications((prev) =>
+                  prev.map((app) =>
+                    app.id === id ? { ...app, status: "PENDING" } : app
+                  )
+                );
+              }
+            }}
+          />
+
+          <DeleteCharityModal
+            open={deleteModalOpen}
+            onOpenChange={setDeleteModalOpen}
+            charity={selectedCharity}
+            onConfirmDelete={async (id) => {
+              const result = await deleteCharity(id);
+              if (result.success) {
+                toast.success(
+                  `Charity "${selectedCharity?.name}" deleted successfully.`
+                );
+                setCharities((prev) => prev.filter((c) => c.id !== id));
+              } else {
+                toast.error(
+                  result.error || "Failed to delete charity. Please try again."
+                );
+              }
             }}
           />
         </TabsContent>

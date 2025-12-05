@@ -5,7 +5,6 @@
 import { prisma } from "@/lib/prisma";
 
 export async function submitCharityRegistration(formData: FormData) {
-
   const organisationName = formData.get("organisationName") as string;
   const charityNumber = formData.get("charityNumber") as string;
   const contactName = formData.get("contactName") as string;
@@ -20,13 +19,32 @@ export async function submitCharityRegistration(formData: FormData) {
 
   const message = messageLines.length ? messageLines.join("\n") : null;
 
-  await prisma.charityApplication.create({
+  const result = await prisma.charityApplication.create({
     data: {
       orgName: organisationName,
       contactName,
       contactEmail,
       website: website || undefined,
-      message: message || undefined,
+      message,
     },
   });
+
+  return { success: true, id: result.id };
 }
+
+export async function getCharityApplications() {
+  const apps = await prisma.charityApplication.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
+  return apps.map(a => ({
+    id: a.id,
+    name: a.orgName,
+    website: a.website,
+    contactEmail: a.contactEmail,
+    submittedAt: a.createdAt,
+    status: a.status,
+    notes: a.message,
+  }));
+}
+
