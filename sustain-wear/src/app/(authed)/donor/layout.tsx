@@ -13,7 +13,7 @@ export default function DonorLayout({
     <ClerkProvider>
       <header className="w-full flex justify-between items-center p-4 bg-white border-b border-gray-200 shadow-sm">
         <div className="text-2xl font-semibold text-[#768755]">
-          <Link href="/">SustainWear</Link>
+          <Link href="/donor/donate">SustainWear</Link>
         </div>
 
         {/* Middle Navigation */}

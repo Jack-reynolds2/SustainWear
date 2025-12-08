@@ -61,7 +61,7 @@ export default function DonorDashboard({ donations }: DonorDashboardProps) {
       {/* Navigation back to donation page */}
       <div className="flex justify-end">
         <Link
-          href="/donate"
+          href="/donor/donate"
           className="inline-block rounded-md bg-[#768755] px-5 py-2 text-sm font-medium text-white hover:bg-[#5d6944]"
         >
           ← Back to Donate
@@ -98,7 +98,7 @@ export default function DonorDashboard({ donations }: DonorDashboardProps) {
                     {/* Edit */}
                     <td className="p-3">
                       <Link
-                        href={`/donate/${d.id}/edit`}
+                        href={`/donor/donate/${d.id}/edit`}
                         className="text-sm text-blue-600 underline"
                       >
                         Edit
@@ -155,7 +155,7 @@ export default function DonorDashboard({ donations }: DonorDashboardProps) {
                     {/* Edit */}
                     <td className="p-3">
                       <Link
-                        href={`/donate/${d.id}/edit`}
+                        href={`/donor/donate/${d.id}/edit`}
                         className="text-sm text-blue-600 underline"
                       >
                         Edit
