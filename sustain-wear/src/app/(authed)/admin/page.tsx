@@ -3,33 +3,35 @@ import { prisma } from "@/lib/prisma";
 import SystemAdminDashboard from "@/components/Dashboards/SystemAdminDashboard";
 import React from "react";
 import { CharityApplication } from "@/components/Modals/SysAdminNotificationModal";
-import { getApprovedCharities } from "@/features/actions/CharityApplication";
-
-
+import {
+  getCharityApplications,
+  getApprovedCharities,
+} from "@/features/actions/CharityApplication";
+import { getAllUsers } from "@/features/actions/users";
 
 export default async function AdminPage() {
-  const apps = await prisma.charityApplication.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  // Fetch initial data in parallel
+  const [applicationsResult, charitiesResult, usersResult] = await Promise.all([
+    getCharityApplications(),
+    getApprovedCharities(),
+    getAllUsers(),
+  ]);
 
-  const approvedCharities = await getApprovedCharities();
+  // The `getCharityApplications` action already returns the data in the correct shape.
+  // No extra mapping is needed here.
+  const initialApplications = applicationsResult;
 
-  const mapped: CharityApplication[] = apps.map((a) => ({
-    id: a.id,
-    name: a.orgName,
-    website: a.website,
-    contactEmail: a.contactEmail,
-    submittedAt: a.createdAt,
-    status: a.status as CharityApplication["status"],
-    notes: a.message,
-  }));
+  // Process approved charities
+  const approvedCharities = charitiesResult;
+
+  // Process users
+  const initialUsers = usersResult.success ? usersResult.users : [];
 
   return (
-    <main className="mx-auto max-w-6xl py-8">
-      <SystemAdminDashboard
-        initialApplications={mapped}
-        initialCharities={approvedCharities}
-      />
-    </main>
+    <SystemAdminDashboard
+      initialApplications={initialApplications}
+      initialCharities={approvedCharities}
+      initialUsers={initialUsers}
+    />
   );
 }

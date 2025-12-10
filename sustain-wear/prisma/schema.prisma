@@ -29,6 +29,7 @@ model Organisation {
   name                String
   slug                String     @unique
   approved            Boolean    @default(false)
+  suspended           Boolean    @default(false)
   description         String?
   website             String?
   contactEmail        String?
@@ -57,6 +58,10 @@ model Donation {
   aiCategorySuggestion String?
   aiConfidenceScore    Float?
   aiReviewed           Boolean        @default(false)
+<<<<<<< HEAD
+=======
+  shippingQrCodeUrl    String?
+>>>>>>> c03078636ef89028ffa69a6017c49249c4e6aa34
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
   imageUrl             String?

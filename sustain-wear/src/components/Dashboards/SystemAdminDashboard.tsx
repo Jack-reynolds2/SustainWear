@@ -33,20 +33,33 @@ import {
   getCharityApplications,
   rejectCharityApplication,
   deleteCharity,
+  suspendCharity,
+  unsuspendCharity,
+  getAllCharities,
 } from "@/features/actions/CharityApplication";
 import { toast } from "sonner";
 import { Organisation } from "@prisma/client";
 import DeleteCharityModal from "../Modals/DeleteCharityModal";
+import DeleteUserModal from "../Modals/DeleteUserModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  getAllUsers,
+  EnrichedUser,
+  deleteUser,
+  suspendUser,
+  unsuspendUser,
+} from "@/features/actions/users";
 
 interface Props {
   initialApplications?: CharityApplication[];
   initialCharities?: Organisation[];
+  initialUsers?: EnrichedUser[];
 }
 
 // Labels only – values will come from server data later
@@ -57,8 +70,6 @@ const overviewStats = [
   { label: "Pending Donations", value: null },
 ];
 
-// Empty arrays – to be replaced with real data from server actions
-const users: any[] = [];
 const reports: any[] = [];
 const auditLog: any[] = [];
 
@@ -72,9 +83,15 @@ const systemHealth = {
 export default function SystemAdminDashboard({
   initialApplications,
   initialCharities,
+  initialUsers,
 }: Props) {
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState<string | "ALL">("ALL");
+
+  // User state
+  const [users, setUsers] = useState<EnrichedUser[]>(initialUsers || []);
+  const [deleteUserModalOpen, setDeleteUserModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<EnrichedUser | null>(null);
 
   // Charity state
   const [applicationsOpen, setApplicationsOpen] = useState(false);
@@ -84,10 +101,81 @@ export default function SystemAdminDashboard({
   const [charities, setCharities] = useState<Organisation[]>(
     initialCharities || []
   );
+  const [charitySearch, setCharitySearch] = useState("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedCharity, setSelectedCharity] = useState<Organisation | null>(
     null
   );
+
+  // Handle suspend/unsuspend charity
+  const handleToggleCharitySuspend = async (charity: Organisation) => {
+    const action = charity.suspended ? unsuspendCharity : suspendCharity;
+    const actionName = charity.suspended ? "unsuspended" : "suspended";
+
+    // Optimistic update
+    setCharities((prev) =>
+      prev.map((c) =>
+        c.id === charity.id
+          ? { ...c, suspended: !charity.suspended }
+          : c
+      )
+    );
+
+    const result = await action(charity.id);
+    if (result.success) {
+      toast.success(`Charity ${actionName} successfully.`);
+    } else {
+      // Revert on failure
+      setCharities((prev) =>
+        prev.map((c) =>
+          c.id === charity.id ? { ...c, suspended: charity.suspended } : c
+        )
+      );
+      toast.error(result.error || `Failed to ${actionName.slice(0, -2)} charity.`);
+    }
+  };
+
+  // Handle suspend/unsuspend user
+  const handleToggleSuspend = async (user: EnrichedUser) => {
+    const action = user.status === "suspended" ? unsuspendUser : suspendUser;
+    const actionName = user.status === "suspended" ? "unsuspended" : "suspended";
+
+    // Optimistic update
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === user.id
+          ? { ...u, status: user.status === "suspended" ? "active" : "suspended" }
+          : u
+      )
+    );
+
+    const result = await action(user.id);
+    if (result.success) {
+      toast.success(`User ${actionName} successfully.`);
+    } else {
+      // Revert on failure
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id ? { ...u, status: user.status } : u
+        )
+      );
+      toast.error(result.error || `Failed to ${actionName.slice(0, -2)} user.`);
+    }
+  };
+
+  // Refresh users every 5 minutes
+  useEffect(() => {
+    const refreshUsers = async () => {
+      const result = await getAllUsers();
+      if (result.success && result.users) {
+        setUsers(result.users);
+      }
+    };
+
+    const intervalId = setInterval(refreshUsers, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     setCharities(initialCharities || []);
@@ -97,8 +185,30 @@ export default function SystemAdminDashboard({
     (a) => a.status === "PENDING"
   ).length;
 
-  // Once you have real data, filter `users` here
-  const filteredUsers = users;
+  // Only show PENDING applications in the modal
+  const pendingApplications = applications.filter(
+    (a) => a.status === "PENDING"
+  );
+
+  // Filter users based on search and role
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      userSearch === "" ||
+      user.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+      user.email.toLowerCase().includes(userSearch.toLowerCase());
+
+    const matchesRole =
+      userRoleFilter === "ALL" || user.role === userRoleFilter;
+
+    return matchesSearch && matchesRole;
+  });
+
+  // Filter charities based on search
+  const filteredCharities = charities.filter((charity) =>
+    charitySearch === "" ||
+    charity.name.toLowerCase().includes(charitySearch.toLowerCase()) ||
+    charity.contactEmail?.toLowerCase().includes(charitySearch.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -209,11 +319,85 @@ export default function SystemAdminDashboard({
                         </TableCell>
                       </TableRow>
                     )}
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.name || "—"}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{user.role}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.charity ? user.charity.name : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={
+                              user.status === "active"
+                                ? "bg-green-600"
+                                : "bg-red-600"
+                            }
+                          >
+                            {user.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(user.joinedAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleToggleSuspend(user)}
+                              >
+                                {user.status === "suspended"
+                                  ? "Unsuspend User"
+                                  : "Suspend User"}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setDeleteUserModalOpen(true);
+                                }}
+                                className="text-red-600"
+                              >
+                                Delete User
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
             </CardContent>
           </Card>
+
+          {/* Delete User Modal */}
+          <DeleteUserModal
+            open={deleteUserModalOpen}
+            onOpenChange={setDeleteUserModalOpen}
+            user={selectedUser}
+            onConfirmDelete={async (id) => {
+              const result = await deleteUser(id);
+              if (result.success) {
+                toast.success(
+                  `User "${selectedUser?.name || selectedUser?.email}" deleted successfully.`
+                );
+                setUsers((prev) => prev.filter((u) => u.id !== id));
+              } else {
+                toast.error(
+                  result.error || "Failed to delete user. Please try again."
+                );
+              }
+            }}
+          />
         </TabsContent>
 
         {/* Charities tab */}
@@ -244,6 +428,16 @@ export default function SystemAdminDashboard({
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Search bar */}
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <Input
+                  placeholder="Search charities by name or email..."
+                  value={charitySearch}
+                  onChange={(e) => setCharitySearch(e.target.value)}
+                  className="md:max-w-xs"
+                />
+              </div>
+              
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -259,7 +453,7 @@ export default function SystemAdminDashboard({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {charities.length === 0 && (
+                    {filteredCharities.length === 0 && (
                       <TableRow>
                         <TableCell
                           colSpan={8}
@@ -269,7 +463,7 @@ export default function SystemAdminDashboard({
                         </TableCell>
                       </TableRow>
                     )}
-                    {charities.map((charity) => (
+                    {filteredCharities.map((charity) => (
                       <TableRow key={charity.id}>
                         <TableCell>{charity.name}</TableCell>
                         <TableCell>
@@ -278,18 +472,13 @@ export default function SystemAdminDashboard({
                         </TableCell>
                         <TableCell>{charity.contactEmail}</TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              charity.approved ? "default" : "destructive"
-                            }
-                            className={
-                              charity.approved
-                                ? "bg-green-600"
-                                : "bg-yellow-600"
-                            }
-                          >
-                            {charity.approved ? "Approved" : "Pending"}
-                          </Badge>
+                          {charity.suspended ? (
+                            <Badge className="bg-red-600">Suspended</Badge>
+                          ) : charity.approved ? (
+                            <Badge className="bg-green-600">Approved</Badge>
+                          ) : (
+                            <Badge className="bg-yellow-600">Pending</Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           {/* Replace with staff count */}
@@ -309,7 +498,15 @@ export default function SystemAdminDashboard({
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleToggleCharitySuspend(charity)}
+                              >
+                                {charity.suspended
+                                  ? "Unsuspend Charity"
+                                  : "Suspend Charity"}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => {
                                   setSelectedCharity(charity);
@@ -334,7 +531,11 @@ export default function SystemAdminDashboard({
           <SysAdminNotificitonModal
             open={applicationsOpen}
             onOpenChange={setApplicationsOpen}
-            applications={applications}
+            applications={pendingApplications}
+            onRefresh={async () => {
+              const freshApplications = await getCharityApplications();
+              setApplications(freshApplications);
+            }}
             onApprove={async (id) => {
               const application = applications.find((app) => app.id === id);
               if (!application) return;

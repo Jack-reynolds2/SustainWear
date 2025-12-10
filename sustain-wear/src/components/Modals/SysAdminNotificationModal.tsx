@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
-import { ExternalLink, Inbox, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ExternalLink, Inbox, Loader2, RefreshCw } from "lucide-react";
 import { ApplicationStatus } from "@prisma/client";
 
 export interface CharityApplication {
@@ -31,6 +31,7 @@ type SysAdminNotificitonModalProps = {
   applications: CharityApplication[];
   onApprove: (id: string) => Promise<void>;
   onReject: (id: string) => Promise<void>;
+  onRefresh?: () => Promise<void>;
 };
 
 export default function SysAdminNotificitonModal({
@@ -39,8 +40,38 @@ export default function SysAdminNotificitonModal({
   applications,
   onApprove,
   onReject,
+  onRefresh,
 }: SysAdminNotificitonModalProps) {
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Auto-refresh every 1 minute when modal is open
+  useEffect(() => {
+    if (!open || !onRefresh) return;
+
+    const refreshData = async () => {
+      setIsRefreshing(true);
+      try {
+        await onRefresh();
+      } finally {
+        setIsRefreshing(false);
+      }
+    };
+
+    const intervalId = setInterval(refreshData, 60 * 1000); // 1 minute
+
+    return () => clearInterval(intervalId);
+  }, [open, onRefresh]);
+
+  const handleManualRefresh = async () => {
+    if (!onRefresh) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleApprove = async (id: string) => {
     setProcessingId(id);
@@ -90,11 +121,26 @@ export default function SysAdminNotificitonModal({
               </div>
             </div>
 
-            {pendingApplications.length > 0 && (
-              <Badge className="text-xs">
-                {pendingApplications.length} pending
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {onRefresh && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  title="Refresh applications"
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                  />
+                </Button>
+              )}
+              {pendingApplications.length > 0 && (
+                <Badge className="text-xs">
+                  {pendingApplications.length} pending
+                </Badge>
+              )}
+            </div>
           </div>
         </DialogHeader>
 

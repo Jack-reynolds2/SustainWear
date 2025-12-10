@@ -50,13 +50,23 @@ export async function canCurrentUserViewTeam(): Promise<boolean> {
 
 /**
  * Get the Prisma user for the current session.
+ * If the user doesn't exist in the database, it will be created automatically.
  */
 export const getPrismaUserFromClerk = async () => {
   const clerkUser = await currentUser();
   if (!clerkUser) return null;
-  return await prisma.user.findUnique({
+  
+  // Try to find the user first
+  let dbUser = await prisma.user.findUnique({
     where: { clerkUserId: clerkUser.id },
   });
+  
+  // If user doesn't exist, create them
+  if (!dbUser) {
+    dbUser = await initialiseNewUser();
+  }
+  
+  return dbUser;
 };
 
 /**
