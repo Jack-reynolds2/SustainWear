@@ -15,11 +15,16 @@ export default async function Page() {
   const approvedDonations = await getApprovedDonations();
   return (
     <div>
+
+
+    <main className="mx-auto max-w-6xl py-8">
+
       <CharityDashboard
         canViewTeam={canViewTeam}
         donations={submittedDonations}
         inventoryItems={approvedDonations}
       />
+      </main>
     </div>
   );
 }

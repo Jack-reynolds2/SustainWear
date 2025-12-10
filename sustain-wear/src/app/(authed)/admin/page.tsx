@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import SystemAdminDashboard from "@/components/Dashboards/SystemAdminDashboard";
 import React from "react";
 import { CharityApplication } from "@/components/Modals/SysAdminNotificationModal";
-import { getApprovedCharities } from "@/features/actions/charityApplication";
+import { getApprovedCharities } from "@/features/actions/CharityApplication";
 
 
 
@@ -25,9 +25,11 @@ export default async function AdminPage() {
   }));
 
   return (
-    <SystemAdminDashboard
-      initialApplications={mapped}
-      initialCharities={approvedCharities}
-    />
+    <main className="mx-auto max-w-6xl py-8">
+      <SystemAdminDashboard
+        initialApplications={mapped}
+        initialCharities={approvedCharities}
+      />
+    </main>
   );
 }
