@@ -24,12 +24,6 @@ export default function DonorLayout({
           >
             Donate
           </Link>
-          <Link
-            href="/dashboard"
-            className="hover:underline text-gray-700 font-medium"
-          >
-            Dashboard
-          </Link>
         </nav>
 
         {/* Right User Icon (from Clerk) */}
