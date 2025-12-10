@@ -7,7 +7,9 @@ function Header() {
   return (
     <header className="w-full flex justify-between items-center p-4 bg-white dark:bg-neutral-900 shadow-sm">
       {/* Logo */}
-      <div className="text-2xl font-semibold text-[#768755]">SustainWear</div>
+      <div className="text-2xl font-semibold text-[#768755]">          
+        <Link href="/dashboard">SustainWear</Link>
+        </div>
 
       {/* Navigation links */}
       <nav className="flex space-x-6">
