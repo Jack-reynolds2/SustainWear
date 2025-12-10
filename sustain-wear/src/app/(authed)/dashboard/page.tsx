@@ -15,7 +15,7 @@ export default async function Page() {
   const dbUser = await getPrismaUserFromClerk();
   const role: Role | "GUEST" = (dbUser?.platformRole as Role) ?? "GUEST";
 
-  // DONOR → donor dashboard
+  // DONOR - donor dashboard
   if (role === "DONOR") {
     const donations = await getMyDonations();
     return (
@@ -25,7 +25,7 @@ export default async function Page() {
     );
   }
 
-  // ORG_STAFF / ORG_ADMIN → charity dashboard
+  // ORG_STAFF / ORG_ADMIN - charity dashboard
   if (role === "ORG_STAFF" || role === "ORG_ADMIN") {
     // only ORG_ADMIN can see team tab
     const canViewTeam = role === "ORG_ADMIN";
@@ -36,7 +36,7 @@ export default async function Page() {
     );
   }
 
-  // PLATFORM_ADMIN → system admin dashboard
+  // PLATFORM_ADMIN - system admin dashboard
   if (role === "PLATFORM_ADMIN") {
     return (
       <OuterShell>
@@ -45,7 +45,7 @@ export default async function Page() {
     );
   }
 
-  // anyone else → unauthorised
+  // anyone else - unauthorised
   return redirect("/unauthorised");
 }
 

@@ -91,7 +91,7 @@ export default function DonorDashboard({ donations }: DonorDashboardProps) {
                     <td className="p-3">{d.title}</td>
 
                     {/* Date */}
-                    <td className="p-3">
+                    <td className="p-3" suppressHydrationWarning>
                       {new Date(d.createdAt).toLocaleDateString()}
                     </td>
 
@@ -148,7 +148,7 @@ export default function DonorDashboard({ donations }: DonorDashboardProps) {
                     <td className="p-3">{d.title}</td>
 
                     {/* Date */}
-                    <td className="p-3">
+                    <td className="p-3" suppressHydrationWarning>
                       {new Date(d.createdAt).toLocaleDateString()}
                     </td>
 
