@@ -33,7 +33,7 @@ import {
   getCharityApplications,
   rejectCharityApplication,
   deleteCharity,
-} from "@/features/actions/charityApplication";
+} from "@/features/actions/CharityApplication";
 import { toast } from "sonner";
 import { Organisation } from "@prisma/client";
 import DeleteCharityModal from "../Modals/DeleteCharityModal";
