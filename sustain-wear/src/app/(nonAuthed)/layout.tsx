@@ -7,21 +7,13 @@ function Header() {
   return (
     <header className="w-full flex justify-between items-center p-4 bg-white dark:bg-neutral-900 shadow-sm">
       {/* Logo */}
-      <div className="text-2xl font-semibold text-[#768755]">SustainWear</div>
+      <div className="text-2xl font-semibold text-[#768755]">          
+        <Link href="/dashboard">SustainWear</Link>
+        </div>
 
       {/* Navigation links */}
       <nav className="flex space-x-6">
-        <Link href="/" className="hover:underline text-gray-700 dark:text-gray-200">
-          Home
-        </Link>
-        <Link
-          href="/donor/donate"
-          className="hover:underline text-[#768755] font-medium"
-        >
-          Donate
-        </Link>
       </nav>
-
       <div>
         <SignedIn>
           <UserButton />

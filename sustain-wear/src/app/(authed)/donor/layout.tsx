@@ -13,7 +13,7 @@ export default function DonorLayout({
     <ClerkProvider>
       <header className="w-full flex justify-between items-center p-4 bg-white border-b border-gray-200 shadow-sm">
         <div className="text-2xl font-semibold text-[#768755]">
-          <Link href="/donor/donate">SustainWear</Link>
+          <Link href="/dashboard">SustainWear</Link>
         </div>
 
         {/* Middle Navigation */}
@@ -23,13 +23,7 @@ export default function DonorLayout({
             className="hover:underline text-[#768755] font-medium"
           >
             Donate
-          </Link>
-          <Link
-            href="/dashboard"
-            className="hover:underline text-gray-700 font-medium"
-          >
-            Dashboard
-          </Link>
+          </Link>          
         </nav>
 
         {/* Right User Icon (from Clerk) */}
