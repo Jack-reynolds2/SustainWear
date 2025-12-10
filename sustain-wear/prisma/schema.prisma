@@ -34,6 +34,7 @@ model Organisation {
   contactEmail        String?
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
+  suspended           Boolean    @default(false)
   donations           Donation[]
 
   @@index([clerkOrganisationId])
@@ -56,10 +57,10 @@ model Donation {
   aiCategorySuggestion String?
   aiConfidenceScore    Float?
   aiReviewed           Boolean        @default(false)
-  shippingQrCodeUrl    String?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
   imageUrl             String?
+  shippingQrCodeUrl    String?
   donor                User?          @relation("DonorDonations", fields: [donorUserId], references: [id])
   organisation         Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
