@@ -21,8 +21,8 @@ export type DonationInput = {
   season?: string | null; // string name of Season enum or null
   // Cloudinary URL returned to client after upload:
   imageUrl?: string | null;
-  // If you are using shipping QR code specifically:
-  shippingQrCodeUrl?: string | null;
+  
+  
 };
 
 /**
@@ -70,8 +70,7 @@ export async function createDonationAction(input: DonationInput) {
       status: "SUBMITTED" as DonationStatus, // matches your enum default
       aiCategorySuggestion: null,
       aiConfidenceScore: null,
-      aiReviewed: false,
-      shippingQrCodeUrl: input.shippingQrCodeUrl ?? input.imageUrl ?? null, // pick one field to store image/qr
+      aiReviewed: false
     },
   });
 
@@ -107,7 +106,6 @@ export async function updateDonationAction(donationId: string, input: Partial<Do
       category: (input.category ?? donation.category) as any,
       condition: (input.condition ?? donation.condition) as any,
       season: (input.season ?? donation.season) as any,
-      shippingQrCodeUrl: input.shippingQrCodeUrl ?? input.imageUrl ?? donation.shippingQrCodeUrl,
     },
   });
 
