@@ -1,8 +1,22 @@
 'use server';
 
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "../../../prisma/client";
-import { Role } from '@prisma/client';
+import { prisma } from "@/lib/prisma";
+import { Role, User as DbUser, Organisation } from "@prisma/client";
+import { User as ClerkUser } from "@clerk/nextjs/server";
+
+export type EnrichedUser = {
+  id: string; // Clerk ID
+  name: string;
+  email: string;
+  role: Role;
+  charity: {
+    id: string;
+    name: string;
+  } | null;
+  status: "active"; // Assuming active for now
+  joinedAt: Date;
+};
 
 /**
  * Ensures the signed-in user exists in the Prisma DB.
@@ -97,7 +111,58 @@ export const fetchUser = async () => {
   }
 };
 
-export const users = {
-  initialiseNewUser,
-  fetchUser,
-};
+export async function getAllUsers(): Promise<{
+  success: boolean;
+  users?: EnrichedUser[];
+  error?: string;
+}> {
+  try {
+    // 1. Fetch all relevant data in parallel
+    const clerk = await clerkClient();
+    const [clerkUsersRes, dbUsers, organisations] = await Promise.all([
+      clerk.users.getUserList({ limit: 500 }),
+      prisma.user.findMany(),
+      prisma.organisation.findMany({ where: { approved: true } }),
+    ]);
+
+    const clerkUsers = clerkUsersRes.data;
+
+    // 2. Create maps for efficient lookups
+    const dbUserMap = new Map<string, DbUser>(
+      dbUsers.map((user) => [user.clerkUserId, user])
+    );
+    const organisationMap = new Map<string, Organisation>(
+      organisations.map((org) => [org.clerkOrganisationId, org])
+    );
+
+    // 3. Combine the data
+    const enrichedUsers: EnrichedUser[] = clerkUsers.map((clerkUser: ClerkUser) => {
+      const dbUser = dbUserMap.get(clerkUser.id);
+      const primaryEmail =
+        clerkUser.emailAddresses.find(
+          (e) => e.id === clerkUser.primaryEmailAddressId
+        )?.emailAddress || "No email";
+
+      const orgId =
+        (clerkUser.privateMetadata?.defaultOrganisationId as string) || null;
+      const organisation = orgId ? organisationMap.get(orgId) : null;
+
+      return {
+        id: clerkUser.id,
+        name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
+        email: primaryEmail,
+        role: dbUser?.platformRole || Role.DONOR, // Default to DONOR if not in DB
+        charity: organisation
+          ? { id: organisation.id, name: organisation.name }
+          : null,
+        status: "active",
+        joinedAt: new Date(clerkUser.createdAt),
+      };
+    });
+
+    return { success: true, users: enrichedUsers };
+  } catch (error) {
+    console.error("Error fetching all users:", error);
+    return { success: false, error: "Failed to fetch users." };
+  }
+}

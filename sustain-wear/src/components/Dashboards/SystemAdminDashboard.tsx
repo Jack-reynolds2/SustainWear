@@ -43,10 +43,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getAllUsers, EnrichedUser } from "@/features/actions/users";
 
 interface Props {
   initialApplications?: CharityApplication[];
   initialCharities?: Organisation[];
+  initialUsers?: EnrichedUser[];
 }
 
 // Labels only – values will come from server data later
@@ -57,8 +59,6 @@ const overviewStats = [
   { label: "Pending Donations", value: null },
 ];
 
-// Empty arrays – to be replaced with real data from server actions
-const users: any[] = [];
 const reports: any[] = [];
 const auditLog: any[] = [];
 
@@ -72,9 +72,13 @@ const systemHealth = {
 export default function SystemAdminDashboard({
   initialApplications,
   initialCharities,
+  initialUsers,
 }: Props) {
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState<string | "ALL">("ALL");
+
+  // User state
+  const [users, setUsers] = useState<EnrichedUser[]>(initialUsers || []);
 
   // Charity state
   const [applicationsOpen, setApplicationsOpen] = useState(false);
@@ -89,6 +93,20 @@ export default function SystemAdminDashboard({
     null
   );
 
+  // Refresh users every 5 minutes
+  useEffect(() => {
+    const refreshUsers = async () => {
+      const result = await getAllUsers();
+      if (result.success && result.users) {
+        setUsers(result.users);
+      }
+    };
+
+    const intervalId = setInterval(refreshUsers, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   useEffect(() => {
     setCharities(initialCharities || []);
   }, [initialCharities]);
@@ -97,8 +115,18 @@ export default function SystemAdminDashboard({
     (a) => a.status === "PENDING"
   ).length;
 
-  // Once you have real data, filter `users` here
-  const filteredUsers = users;
+  // Filter users based on search and role
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      userSearch === "" ||
+      user.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+      user.email.toLowerCase().includes(userSearch.toLowerCase());
+
+    const matchesRole =
+      userRoleFilter === "ALL" || user.role === userRoleFilter;
+
+    return matchesSearch && matchesRole;
+  });
 
   return (
     <div className="space-y-6">
@@ -209,6 +237,29 @@ export default function SystemAdminDashboard({
                         </TableCell>
                       </TableRow>
                     )}
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.name || "—"}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{user.role}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.charity ? user.charity.name : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="bg-green-600">{user.status}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(user.joinedAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm">
+                            ...
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
