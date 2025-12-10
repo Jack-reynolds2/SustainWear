@@ -14,7 +14,7 @@ export type EnrichedUser = {
     id: string;
     name: string;
   } | null;
-  status: "active"; // Assuming active for now
+  status: "active" | "suspended";
   joinedAt: Date;
 };
 
@@ -155,7 +155,7 @@ export async function getAllUsers(): Promise<{
         charity: organisation
           ? { id: organisation.id, name: organisation.name }
           : null,
-        status: "active",
+        status: clerkUser.banned ? "suspended" : "active",
         joinedAt: new Date(clerkUser.createdAt),
       };
     });
@@ -164,5 +164,81 @@ export async function getAllUsers(): Promise<{
   } catch (error) {
     console.error("Error fetching all users:", error);
     return { success: false, error: "Failed to fetch users." };
+  }
+}
+
+/**
+ * Deletes a user from both Clerk and the local database.
+ */
+export async function deleteUser(clerkUserId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const clerk = await clerkClient();
+
+    // 1. Delete user from Clerk
+    try {
+      await clerk.users.deleteUser(clerkUserId);
+    } catch (error: any) {
+      // If user not found in Clerk, continue to delete from DB
+      if (error.status !== 404) {
+        throw error;
+      }
+      console.log(`User ${clerkUserId} not found in Clerk. Proceeding with local deletion.`);
+    }
+
+    // 2. Delete user from local database
+    await prisma.user.deleteMany({
+      where: { clerkUserId },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to delete user.",
+    };
+  }
+}
+
+/**
+ * Suspends (bans) a user in Clerk.
+ */
+export async function suspendUser(clerkUserId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const clerk = await clerkClient();
+    await clerk.users.banUser(clerkUserId);
+    return { success: true };
+  } catch (error) {
+    console.error("Error suspending user:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to suspend user.",
+    };
+  }
+}
+
+/**
+ * Unsuspends (unbans) a user in Clerk.
+ */
+export async function unsuspendUser(clerkUserId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const clerk = await clerkClient();
+    await clerk.users.unbanUser(clerkUserId);
+    return { success: true };
+  } catch (error) {
+    console.error("Error unsuspending user:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to unsuspend user.",
+    };
   }
 }

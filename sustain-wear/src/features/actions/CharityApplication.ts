@@ -248,3 +248,57 @@ export async function deleteCharity(organisationId: string) {
   }
 }
 
+/**
+ * Suspends a charity organisation.
+ */
+export async function suspendCharity(organisationId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    await prisma.organisation.update({
+      where: { id: organisationId },
+      data: { suspended: true },
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Error suspending charity:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to suspend charity.",
+    };
+  }
+}
+
+/**
+ * Unsuspends a charity organisation.
+ */
+export async function unsuspendCharity(organisationId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    await prisma.organisation.update({
+      where: { id: organisationId },
+      data: { suspended: false },
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Error unsuspending charity:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to unsuspend charity.",
+    };
+  }
+}
+
+/**
+ * Gets all charities (approved and suspended).
+ */
+export async function getAllCharities() {
+  const organisations = await prisma.organisation.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+  return organisations;
+}
+

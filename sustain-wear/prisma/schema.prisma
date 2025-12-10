@@ -29,6 +29,7 @@ model Organisation {
   name                String
   slug                String     @unique
   approved            Boolean    @default(false)
+  suspended           Boolean    @default(false)
   description         String?
   website             String?
   contactEmail        String?
