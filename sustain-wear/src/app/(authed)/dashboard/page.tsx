@@ -10,6 +10,10 @@ import SystemAdminDashboard from "@/components/Dashboards/SystemAdminDashboard";
 
 import { getPrismaUserFromClerk } from "@/features/auth/userRoles/helpers";
 import { getMyDonations } from "@/features/actions/donateCRUD";
+import {
+  getApprovedDonations,
+  getSubmittedDonations,
+} from "@/features/donations/charityActions";
 
 export default async function Page() {
   const dbUser = await getPrismaUserFromClerk();
@@ -29,9 +33,15 @@ export default async function Page() {
   if (role === "ORG_STAFF" || role === "ORG_ADMIN") {
     // only ORG_ADMIN can see team tab
     const canViewTeam = role === "ORG_ADMIN";
+    const submittedDonations = await getSubmittedDonations();
+    const approvedDonations = await getApprovedDonations();
     return (
       <OuterShell>
-        <CharityDashboard canViewTeam={canViewTeam} />
+        <CharityDashboard
+          canViewTeam={canViewTeam}
+          donations={submittedDonations}
+          inventoryItems={approvedDonations}
+        />
       </OuterShell>
     );
   }

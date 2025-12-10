@@ -46,11 +46,11 @@ export async function createDonationAction(input: DonationInput) {
     );
   }
 
-  // Authorization: allow platform admins, org staff/admin for that org, or donors (depending on your rules)
+  // Authorisation: allow platform admins, org staff/admin for that org, or donors (depending on your rules)
   // Example: donors can create donations for their default org; org staff/admin can create for the org.
   const allowedRoles = [ROLES.DONOR, ROLES.ORG_STAFF, ROLES.ORG_ADMIN, ROLES.PLATFORM_ADMIN];
-  if (!allowedRoles.includes(prismaUser.platformRole)) {
-    throw new Error("Unauthorized - insufficient role to create donation");
+  if (!allowedRoles.includes(prismaUser.platformRole as any)) {
+    throw new Error("Unauthorised - insufficient role to create donation");
   }
 
   // Optional: if user is ORG_STAFF or ORG_ADMIN you may want to check they actually belong to the org.

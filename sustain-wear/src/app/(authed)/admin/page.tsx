@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import SystemAdminDashboard from "@/components/Dashboards/SystemAdminDashboard";
 import React from "react";
 import { CharityApplication } from "@/components/Modals/SysAdminNotificationModal";
-import { getApprovedCharities } from "@/features/actions/CharityApplication";
+import { getApprovedCharities } from "@/features/actions/charityApplication";
 
 
 

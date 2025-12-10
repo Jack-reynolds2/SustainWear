@@ -95,7 +95,7 @@ export async function registerDonation(formData: FormData) {
       category: category as any,
       condition: condition as any,
       status: "SUBMITTED",
-      shippingQrCodeUrl: imageUrl, // store image URL (temporary use)
+      imageUrl: imageUrl, // store image URL
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -164,7 +164,7 @@ export async function updateDonation(formData: FormData) {
   const imageFile = formData.get("image") as File | null;
 
   // Handle image upload 
-  let imageUrl = existing.shippingQrCodeUrl;
+  let imageUrl = existing.imageUrl;
 
   if (imageFile && imageFile.size > 0) {
     const uploaded = await uploadToCloudinary(imageFile);
@@ -179,7 +179,7 @@ export async function updateDonation(formData: FormData) {
       description,
       category: category as any,
       condition: condition as any,
-      shippingQrCodeUrl: imageUrl,
+      imageUrl: imageUrl,
       updatedAt: new Date(),
     },
   });
