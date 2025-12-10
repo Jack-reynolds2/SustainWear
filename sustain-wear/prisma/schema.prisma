@@ -32,6 +32,7 @@ model Organisation {
   suspended           Boolean    @default(false)
   description         String?
   website             String?
+  contactName         String?
   contactEmail        String?
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt

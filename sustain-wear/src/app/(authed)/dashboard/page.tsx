@@ -14,10 +14,20 @@ import {
   getApprovedDonations,
   getSubmittedDonations,
 } from "@/features/donations/charityActions";
+import {
+  getCharityApplications,
+  getApprovedCharities,
+} from "@/features/actions/CharityApplication";
+import { getAllUsers } from "@/features/actions/users";
+import { getTeamMembers } from "@/features/actions/teamActions";
+import { prisma } from "@/lib/prisma";
 
 export default async function Page() {
   const dbUser = await getPrismaUserFromClerk();
   const role: Role | "GUEST" = (dbUser?.platformRole as Role) ?? "GUEST";
+
+  console.log("Dashboard - dbUser:", dbUser);
+  console.log("Dashboard - role:", role);
 
   // DONOR - donor dashboard
   if (role === "DONOR") {
@@ -35,12 +45,35 @@ export default async function Page() {
     const canViewTeam = role === "ORG_ADMIN";
     const submittedDonations = await getSubmittedDonations();
     const approvedDonations = await getApprovedDonations();
+    
+    // Get the organisation for this user
+    let organisationId: string | undefined;
+    let teamMembers: Awaited<ReturnType<typeof getTeamMembers>> = [];
+    
+    if (dbUser?.defaultClerkOrganisationId) {
+      // Find the organisation in our DB by Clerk org ID
+      const org = await prisma.organisation.findFirst({
+        where: { clerkOrganisationId: dbUser.defaultClerkOrganisationId },
+      });
+      
+      if (org) {
+        organisationId = org.id;
+        
+        // Only fetch team members if user can view them
+        if (canViewTeam) {
+          teamMembers = await getTeamMembers(organisationId);
+        }
+      }
+    }
+    
     return (
       <OuterShell>
         <CharityDashboard
           canViewTeam={canViewTeam}
           donations={submittedDonations}
           inventoryItems={approvedDonations}
+          organisationId={organisationId}
+          initialTeamMembers={teamMembers}
         />
       </OuterShell>
     );
@@ -48,9 +81,26 @@ export default async function Page() {
 
   // PLATFORM_ADMIN - system admin dashboard
   if (role === "PLATFORM_ADMIN") {
+    // Fetch admin data in parallel
+    const [applicationsResult, charitiesResult, usersResult] = await Promise.all([
+      getCharityApplications(),
+      getApprovedCharities(),
+      getAllUsers(),
+    ]);
+
+    const initialApplications = applicationsResult;
+    const approvedCharities = charitiesResult;
+    const initialUsers = usersResult.success ? usersResult.users : [];
+
+    console.log("Dashboard - Users fetched:", initialUsers?.length);
+
     return (
       <OuterShell>
-        <SystemAdminDashboard />
+        <SystemAdminDashboard
+          initialApplications={initialApplications}
+          initialCharities={approvedCharities}
+          initialUsers={initialUsers}
+        />
       </OuterShell>
     );
   }

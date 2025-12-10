@@ -69,9 +69,9 @@ export default function DashboardDebugSwitcher({
       <section className="rounded-md border bg-background p-4">
         {view === "DONOR" && <DonorDashboard donations={donations} />}
 
-        {view === "ORG_STAFF" && <CharityDashboard canViewTeam={false} />}
+        {view === "ORG_STAFF" && <CharityDashboard canViewTeam={false} donations={[]} inventoryItems={[]} />}
 
-        {view === "ORG_ADMIN" && <CharityDashboard canViewTeam={true} />}
+        {view === "ORG_ADMIN" && <CharityDashboard canViewTeam={true} donations={[]} inventoryItems={[]} />}
 
         {view === "PLATFORM_ADMIN" && <SystemAdminDashboard />}
       </section>

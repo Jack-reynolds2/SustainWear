@@ -18,7 +18,7 @@ function makeUniqueSlug(name: string) {
 
 
 function generateTempPassword() {
-  // Generate a stronger password that meets Clerk's requirements
+  // Generate a strong password that meets Clerk's requirements
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
   let password = '';
   for (let i = 0; i < 12; i++) {
@@ -34,31 +34,41 @@ export async function approveCharityApplication(applicationId: string) {
   });
 
   if (!app) {
-    throw new Error("Application not found");
+    return { success: false, error: "Application not found", tempPassword: null, loginEmail: null, newOrganisation: null };
+  }
+
+  // Check if already approved - prevent duplicate approvals
+  if (app.status === "APPROVED") {
+    return { success: false, error: "This application has already been approved", tempPassword: null, loginEmail: null, newOrganisation: null };
+  }
+
+  // Check if already rejected
+  if (app.status === "REJECTED") {
+    return { success: false, error: "This application has been rejected and cannot be approved", tempPassword: null, loginEmail: null, newOrganisation: null };
   }
 
   if (!app.contactEmail) {
-    throw new Error("Application has no contact email");
+    return { success: false, error: "Application has no contact email", tempPassword: null, loginEmail: null, newOrganisation: null };
   }
 
-  //  Mark as APPROVED
-  await prisma.charityApplication.update({
-    where: { id: applicationId },
-    data: { status: "APPROVED" },
-  });
-
   //  Get a Clerk client
-  const clerk = await clerkClient(); // keep this if your project already uses this pattern
+  const clerk = await clerkClient();
 
   // Create the Clerk organisation
   const slug = makeUniqueSlug(app.orgName);
   console.log('Creating organization with slug:', slug);
 
-  const org = await clerk.organizations.createOrganization({
-    name: app.orgName,
-    slug,
-  });
-  console.log('Organization created:', org.id);
+  let org;
+  try {
+    org = await clerk.organizations.createOrganization({
+      name: app.orgName,
+      slug,
+    });
+    console.log('Organization created:', org.id);
+  } catch (err: any) {
+    console.error("Clerk organization create error:", JSON.stringify(err.errors ?? err, null, 2));
+    return { success: false, error: "Failed to create organization in Clerk", tempPassword: null, loginEmail: null, newOrganisation: null };
+  }
 
   // Find or create the admin user
   const email = app.contactEmail;
@@ -113,19 +123,46 @@ export async function approveCharityApplication(applicationId: string) {
         lastName,
         username,
         password: tempPassword,
+        skipPasswordChecks: true,
         privateMetadata: {
           role: "ORG_ADMIN",
           defaultOrganisationId: org.id,
         },
       });
 
+      // Manually verify the email so user can log in immediately
+      // Use Backend API to update the email address verification status
+      const primaryEmail = newUser.emailAddresses.find(
+        (e) => e.emailAddress === email
+      );
+      
+      if (primaryEmail) {
+        // Use fetch to call Clerk's Backend API directly to verify email
+        const verifyResponse = await fetch(
+          `https://api.clerk.com/v1/email_addresses/${primaryEmail.id}/verify`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.CLERK_SECRET_KEY}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        
+        if (!verifyResponse.ok) {
+          console.log("Warning: Could not auto-verify email. User may need to verify manually.");
+        } else {
+          console.log("Email verified successfully for new charity admin");
+        }
+      }
+
       clerkUserId = newUser.id;
     } catch (err: any) {
       console.error(
-        "Clerk user create error:",
+        "Clerk user create error",
         JSON.stringify(err.errors ?? err, null, 2)
       );
-      throw err;
+      return { success: false, error: "Failed to create user in Clerk", tempPassword: null, loginEmail: null, newOrganisation: null };
     }
   }
 
@@ -143,7 +180,7 @@ export async function approveCharityApplication(applicationId: string) {
       "Clerk organization membership error:",
       JSON.stringify(err.errors ?? err, null, 2)
     );
-    throw err;
+    return { success: false, error: "Failed to add user to organization", tempPassword: null, loginEmail: null, newOrganisation: null };
   }
 
   // 7. Create a corresponding Organisation record in your database
@@ -152,22 +189,32 @@ export async function approveCharityApplication(applicationId: string) {
       data: {
         clerkOrganisationId: org.id,
         name: app.orgName,
+        contactName: app.contactName,
         contactEmail: app.contactEmail,
         approved: true,
-        // Use the same unique slug that was created for the Clerk organization
         slug: slug,
       },
     });
 
-    return { success: true, tempPassword, newOrganisation };
+    // 8. Mark the application as APPROVED only after everything succeeds
+    await prisma.charityApplication.update({
+      where: { id: applicationId },
+      data: { status: "APPROVED" },
+    });
+
+    return { 
+      success: true, 
+      tempPassword, 
+      loginEmail: email, // Return the login email explicitly
+      newOrganisation 
+    };
   } catch (dbError) {
     console.error("Database error creating organisation:", dbError);
-    // If DB write fails, we should ideally roll back the Clerk user/org creation
-    // For now, we'll just return a detailed error.
     return {
       success: false,
       error: "Failed to save new charity to the database after creating it in Clerk.",
       tempPassword: null,
+      loginEmail: null,
       newOrganisation: null,
     };
   }
@@ -214,17 +261,38 @@ export async function deleteCharity(organisationId: string) {
       return { success: false, error: "Organisation not found." };
     }
 
-    // 2. Attempt to delete the organisation from Clerk
+    const clerk = await clerkClient();
+
+    // 2. Get all members of the organization and delete them from Clerk
     try {
-      const clerk = await clerkClient();
+      const memberships = await clerk.organizations.getOrganizationMembershipList({
+        organizationId: organisation.clerkOrganisationId,
+      });
+
+      // Delete each user from Clerk (GDPR compliance)
+      for (const membership of memberships.data) {
+        try {
+          await clerk.users.deleteUser(membership.publicUserData?.userId || "");
+          console.log(`Deleted user ${membership.publicUserData?.userId} from Clerk`);
+        } catch (userError: any) {
+          // If user not found, continue
+          if (userError.status !== 404) {
+            console.error(`Failed to delete user ${membership.publicUserData?.userId}:`, userError);
+          }
+        }
+      }
+    } catch (memberError: any) {
+      console.log("Could not fetch organization members:", memberError.message);
+    }
+
+    // 3. Delete the organisation from Clerk
+    try {
       await clerk.organizations.deleteOrganization(
         organisation.clerkOrganisationId
       );
     } catch (error: any) {
       // If Clerk returns a 404, it means the org is already gone.
-      // We can ignore this error and proceed to delete it from our DB.
       if (error.status !== 404) {
-        // For any other error, re-throw it to be caught by the outer block.
         throw error;
       }
       console.log(
@@ -232,7 +300,12 @@ export async function deleteCharity(organisationId: string) {
       );
     }
 
-    // 3. Delete the organisation from your database
+    // 4. Delete users from local database that belonged to this organisation
+    await prisma.user.deleteMany({
+      where: { defaultClerkOrganisationId: organisation.clerkOrganisationId },
+    });
+
+    // 5. Delete the organisation from your database
     await prisma.organisation.delete({
       where: { id: organisationId },
     });
