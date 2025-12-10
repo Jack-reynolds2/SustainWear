@@ -11,17 +11,7 @@ function Header() {
 
       {/* Navigation links */}
       <nav className="flex space-x-6">
-        <Link href="/" className="hover:underline text-gray-700 dark:text-gray-200">
-          Home
-        </Link>
-        <Link
-          href="/donor/donate"
-          className="hover:underline text-[#768755] font-medium"
-        >
-          Donate
-        </Link>
       </nav>
-
       <div>
         <SignedIn>
           <UserButton />

@@ -67,10 +67,6 @@ export default async function LandingPage() {
                   </Button>
                 </SignInButton>
               </SignedOut>
-
-              <SignedIn>
-                <UserButton />
-              </SignedIn>
             </div>
 
             <div className="mt-10 relative z-50 flex flex-row flex-wrap items-center gap-4">
