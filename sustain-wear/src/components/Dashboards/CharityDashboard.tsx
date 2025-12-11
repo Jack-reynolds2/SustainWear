@@ -28,10 +28,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { approveDonation } from "@/features/donations/charityActions";
 import { Donation, User, DonationStatus } from "@prisma/client";
-import { startTransition, useState } from "react";
+import { useState } from "react";
 import DonationDetailsModal from "../Modals/DonationDetailsModal";
+import InventoryItemModal from "../Modals/InventoryItemModal";
 import InviteTeamMemberModal from "../Modals/InviteTeamMemberModal";
 import { TeamMember, removeTeamMember, updateTeamMemberRole, getTeamMembers } from "@/features/actions/teamActions";
 import { toast } from "sonner";
@@ -63,6 +63,10 @@ export default function CharityDashboard({
   >("ALL");
   const [selectedDonation, setSelectedDonation] =
     useState<DonationWithDonor | null>(null);
+  
+  // Inventory item details modal state
+  const [selectedInventoryItem, setSelectedInventoryItem] =
+    useState<DonationWithDonor | null>(null);
 
   // Team management state
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(initialTeamMembers);
@@ -75,14 +79,6 @@ export default function CharityDashboard({
       (d.title.toLowerCase().includes(donationSearch.toLowerCase()) ||
         d.donor?.name?.toLowerCase().includes(donationSearch.toLowerCase()))
   );
-
-  const handleApprove = (donationId: string) => {
-    startTransition(() => {
-      approveDonation(donationId).then(() => {
-        setSelectedDonation(null);
-      });
-    });
-  };
 
   // Refresh team members list
   const refreshTeamMembers = async () => {
@@ -123,7 +119,11 @@ export default function CharityDashboard({
         isOpen={!!selectedDonation}
         onClose={() => setSelectedDonation(null)}
         donation={selectedDonation}
-        onApprove={handleApprove}
+      />
+      <InventoryItemModal
+        isOpen={!!selectedInventoryItem}
+        onClose={() => setSelectedInventoryItem(null)}
+        item={selectedInventoryItem}
       />
       <div className="space-y-6">
         {/* Page header */}
@@ -241,7 +241,6 @@ export default function CharityDashboard({
                         <TableHead>Category</TableHead>
                         <TableHead>Condition</TableHead>
                         <TableHead>Submitted</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -250,9 +249,9 @@ export default function CharityDashboard({
                           <TableRow
                             key={donation.id}
                             onClick={() => setSelectedDonation(donation)}
-                            className="cursor-pointer"
+                            className="cursor-pointer hover:bg-muted/50"
                           >
-                            <TableCell>{donation.title}</TableCell>
+                            <TableCell className="font-medium">{donation.title}</TableCell>
                             <TableCell>{donation.donor?.name}</TableCell>
                             <TableCell>
                               <StatusBadge status={donation.status as any} />
@@ -261,19 +260,6 @@ export default function CharityDashboard({
                             <TableCell>{donation.condition}</TableCell>
                             <TableCell suppressHydrationWarning>
                               {new Date(donation.createdAt).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startTransition(() => {
-                                    approveDonation(donation.id);
-                                  });
-                                }}
-                              >
-                                Approve
-                              </Button>
                             </TableCell>
                           </TableRow>
                         ))
@@ -291,6 +277,9 @@ export default function CharityDashboard({
                     </TableBody>
                   </Table>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Click on a donation row to view details and update its status.
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -328,7 +317,11 @@ export default function CharityDashboard({
                               {new Date(item.updatedAt).toLocaleDateString()}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button size="sm" variant="outline">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => setSelectedInventoryItem(item)}
+                              >
                                 Details
                               </Button>
                             </TableCell>

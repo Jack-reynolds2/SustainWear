@@ -13,6 +13,7 @@ import { getMyDonations } from "@/features/actions/donateCRUD";
 import {
   getApprovedDonations,
   getSubmittedDonations,
+  getAllDonationsForCharity,
 } from "@/features/donations/charityActions";
 import {
   getCharityApplications,
@@ -65,14 +66,14 @@ export default async function Page() {
     }
     
     // Fetch donations for this organisation (includes donations to all charities)
-    const submittedDonations = await getSubmittedDonations(organisationId);
+    const allDonations = await getAllDonationsForCharity(organisationId);
     const approvedDonations = await getApprovedDonations(organisationId);
     
     return (
       <OuterShell>
         <CharityDashboard
           canViewTeam={canViewTeam}
-          donations={submittedDonations}
+          donations={allDonations}
           inventoryItems={approvedDonations}
           organisationId={organisationId}
           initialTeamMembers={teamMembers}
