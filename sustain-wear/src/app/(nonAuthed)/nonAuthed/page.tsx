@@ -81,8 +81,10 @@ export default async function LandingPage() {
                 <Link href="/dashboard">Go to Dashboard</Link>
               </Button>
             </SignedIn>
+            <SignedOut>
+              <CharitySignupModal />
+            </SignedOut>
 
-            <CharitySignupModal />
           </div>
         </div>
 
