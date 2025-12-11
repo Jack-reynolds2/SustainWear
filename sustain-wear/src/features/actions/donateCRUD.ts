@@ -149,6 +149,12 @@ export async function getMyDonations() {
       status: true,
       imageUrl: true,
       createdAt: true,
+      organisation: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
     take: 20,
