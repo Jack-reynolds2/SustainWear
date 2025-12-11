@@ -329,14 +329,14 @@ export default function SystemAdminDashboard({
                     <SelectContent>
                       <SelectItem value="ALL">All roles</SelectItem>
                       <SelectItem value="DONOR">Donor</SelectItem>
-                      <SelectItem value="CHARITY_STAFF">
-                        Charity staff
+                      <SelectItem value="ORG_STAFF">
+                         Organisation Staff
                       </SelectItem>
-                      <SelectItem value="CHARITY_ADMIN">
-                        Charity admin
+                      <SelectItem value="ORG_ADMIN">
+                        Organisation Admin
                       </SelectItem>
-                      <SelectItem value="SYSTEM_ADMIN">
-                        System admin
+                      <SelectItem value="PLATFORM_ADMIN">
+                        Platform admin
                       </SelectItem>
                     </SelectContent>
                   </Select>

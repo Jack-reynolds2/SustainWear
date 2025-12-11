@@ -66,7 +66,7 @@ export default async function LandingPage() {
               <SignInButton mode="modal">
                 <Button
                   variant="outline"
-                  className="rounded-md px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-xs hover:bg-gray-100"
+                  className="rounded-md px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-gray-100"
                 >
                   Access Your Donation Hub
                 </Button>
