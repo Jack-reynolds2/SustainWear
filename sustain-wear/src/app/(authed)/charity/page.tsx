@@ -35,6 +35,10 @@ export default async function Page() {
   
   return (
     <div>
+
+
+    <main className="mx-auto max-w-6xl py-8">
+
       <CharityDashboard
         canViewTeam={canViewTeam}
         donations={submittedDonations}
@@ -42,6 +46,7 @@ export default async function Page() {
         organisationId={organisationId}
         initialTeamMembers={teamMembers}
       />
+      </main>
     </div>
   );
 }

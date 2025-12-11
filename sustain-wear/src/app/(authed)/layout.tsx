@@ -16,16 +16,6 @@ export default function DonorLayout({
           <Link href="/dashboard">SustainWear</Link>
         </div>
 
-        {/* Middle Navigation */}
-        <nav className="flex space-x-6">
-          <Link
-            href="/donor/donate"
-            className="hover:underline text-[#768755] font-medium"
-          >
-            Donate
-          </Link>          
-        </nav>
-
         {/* Right User Icon (from Clerk) */}
         <SignedIn>
           <UserButton />
