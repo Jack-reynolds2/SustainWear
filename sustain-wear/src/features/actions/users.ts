@@ -147,6 +147,7 @@ export async function getAllUsers(): Promise<{
         )?.emailAddress || "No email";
 
       const orgId =
+        (clerkUser.privateMetadata?.defaultClerkOrganisationId as string) ||
         (clerkUser.privateMetadata?.defaultOrganisationId as string) || null;
       const organisation = orgId ? organisationMap.get(orgId) : null;
 

@@ -101,7 +101,16 @@ export async function inviteTeamMember({
           privateMetadata: {
             ...user.privateMetadata,
             role: role === "org:admin" ? "ORG_ADMIN" : "ORG_STAFF",
-            defaultOrganisationId: clerkOrgId,
+            defaultClerkOrganisationId: clerkOrgId,
+          },
+        });
+
+        // Also update in our database
+        await prisma.user.update({
+          where: { clerkUserId },
+          data: {
+            platformRole: role === "org:admin" ? "ORG_ADMIN" : "ORG_STAFF",
+            defaultClerkOrganisationId: clerkOrgId,
           },
         });
       }
@@ -126,7 +135,7 @@ export async function inviteTeamMember({
           skipPasswordChecks: true,
           privateMetadata: {
             role: role === "org:admin" ? "ORG_ADMIN" : "ORG_STAFF",
-            defaultOrganisationId: clerkOrgId,
+            defaultClerkOrganisationId: clerkOrgId,
           },
         });
 
@@ -272,7 +281,7 @@ export async function removeTeamMember({
           privateMetadata: {
             ...user.privateMetadata,
             role: "DONOR",
-            defaultOrganisationId: null,
+            defaultClerkOrganisationId: null,
           },
         });
 

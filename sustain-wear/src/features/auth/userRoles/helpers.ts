@@ -29,6 +29,7 @@ export const initialiseNewUser = async () => {
   
   // Get defaultClerkOrganisationId from metadata if present (check both key names for compatibility)
   const defaultClerkOrganisationId = 
+    (clerkUser.privateMetadata?.defaultClerkOrganisationId as string) ||
     (clerkUser.privateMetadata?.defaultOrganisationId as string) || 
     (clerkUser.privateMetadata?.defaultClerkOrganisationID as string) || 
     null;
@@ -86,6 +87,7 @@ export const getPrismaUserFromClerk = async () => {
       ? (clerkRole as Role) 
       : Role.DONOR;
     const defaultClerkOrganisationId = 
+      (clerkUser.privateMetadata?.defaultClerkOrganisationId as string) ||
       (clerkUser.privateMetadata?.defaultOrganisationId as string) || 
       (clerkUser.privateMetadata?.defaultClerkOrganisationID as string) || 
       null;

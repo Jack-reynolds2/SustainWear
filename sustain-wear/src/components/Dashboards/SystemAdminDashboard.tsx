@@ -68,7 +68,6 @@ interface Props {
 }
 
 // Labels only – values will be calculated from data
-const reports: any[] = [];
 const auditLog: any[] = [];
 
 const systemHealth = {
@@ -249,7 +248,7 @@ export default function SystemAdminDashboard({
             System Admin Dashboard
           </h1>
           <p className="text-sm text-muted-foreground">
-            Global overview of users, charities, reports, and system health.
+            Global overview of users, charities, and system health.
           </p>
         </div>
       </div>
@@ -299,7 +298,6 @@ export default function SystemAdminDashboard({
         <TabsList>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="charities">Charities</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
 
@@ -737,45 +735,6 @@ export default function SystemAdminDashboard({
               setCharities(refreshed);
             }}
           />
-        </TabsContent>
-
-        {/* Reports tab */}
-        <TabsContent value="reports" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>User reports & moderation</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Target</TableHead>
-                      <TableHead>Reporter</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reports.length === 0 && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={8}
-                          className="py-6 text-center text-sm text-muted-foreground"
-                        >
-                          No reports to display yet.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* System tab */}
