@@ -45,10 +45,13 @@ export default async function AdminPage() {
   console.log("Admin page - initialUsers count:", initialUsers?.length);
 
   return (
+    <main className="mx-auto max-w-6xl py-8">
+
     <SystemAdminDashboard
       initialApplications={initialApplications}
       initialCharities={approvedCharities}
       initialUsers={initialUsers}
     />
+    </main>
   );
 }
