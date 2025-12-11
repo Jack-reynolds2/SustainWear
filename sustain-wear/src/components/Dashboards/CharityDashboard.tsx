@@ -21,10 +21,21 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { approveDonation } from "@/features/donations/charityActions";
 import { Donation, User, DonationStatus } from "@prisma/client";
 import { startTransition, useState } from "react";
 import DonationDetailsModal from "../Modals/DonationDetailsModal";
+import InviteTeamMemberModal from "../Modals/InviteTeamMemberModal";
+import { TeamMember, removeTeamMember, updateTeamMemberRole, getTeamMembers } from "@/features/actions/teamActions";
+import { toast } from "sonner";
+import { MoreHorizontal, UserPlus } from "lucide-react";
 
 type DonationWithDonor = Donation & { donor: User | null };
 
@@ -33,6 +44,10 @@ type CharityDashboardProps = {
   canViewTeam: boolean;
   donations: DonationWithDonor[];
   inventoryItems: DonationWithDonor[];
+  /** Organisation ID for team management */
+  organisationId?: string;
+  /** Initial team members data */
+  initialTeamMembers?: TeamMember[];
 };
 
 // Labels only – values will come from server data later
@@ -43,15 +58,12 @@ const overviewStats = [
   { label: "Declined", value: null },
 ];
 
-// Empty arrays – to be replaced with real data from server actions
-// const donations: any[] = [];
-// const inventoryItems: any[] = [];
-const teamMembers: any[] = [];
-
 export default function CharityDashboard({
   canViewTeam,
   donations,
   inventoryItems,
+  organisationId,
+  initialTeamMembers = [],
 }: CharityDashboardProps) {
   const [donationSearch, setDonationSearch] = useState("");
   const [donationStatusFilter, setDonationStatusFilter] = useState<
@@ -59,6 +71,10 @@ export default function CharityDashboard({
   >("ALL");
   const [selectedDonation, setSelectedDonation] =
     useState<DonationWithDonor | null>(null);
+
+  // Team management state
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(initialTeamMembers);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   // Once wired up, filter `donations` here (for now it's just the empty array)
   const filteredDonations = donations.filter(
@@ -74,6 +90,39 @@ export default function CharityDashboard({
         setSelectedDonation(null);
       });
     });
+  };
+
+  // Refresh team members list
+  const refreshTeamMembers = async () => {
+    if (!organisationId) return;
+    const members = await getTeamMembers(organisationId);
+    setTeamMembers(members);
+  };
+
+  // Handle removing a team member
+  const handleRemoveMember = async (userId: string, memberName: string) => {
+    if (!organisationId) return;
+    
+    const result = await removeTeamMember({ organisationId, userId });
+    if (result.success) {
+      toast.success(`${memberName} has been removed from the team`);
+      refreshTeamMembers();
+    } else {
+      toast.error(result.error || "Failed to remove team member");
+    }
+  };
+
+  // Handle changing a team member's role
+  const handleChangeRole = async (userId: string, newRole: "org:admin" | "org:member") => {
+    if (!organisationId) return;
+    
+    const result = await updateTeamMemberRole({ organisationId, userId, newRole });
+    if (result.success) {
+      toast.success("Role updated successfully");
+      refreshTeamMembers();
+    } else {
+      toast.error(result.error || "Failed to update role");
+    }
   };
 
   return (
@@ -288,14 +337,18 @@ export default function CharityDashboard({
           {canViewTeam && (
             <TabsContent value="team" className="space-y-4">
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Charity team</CardTitle>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setInviteModalOpen(true)}
+                    disabled={!organisationId}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Invite team member
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex justify-end">
-                    <Button variant="outline">Invite team member</Button>
-                  </div>
-
                   <div className="rounded-md border">
                     <Table>
                       <TableHeader>
@@ -309,21 +362,84 @@ export default function CharityDashboard({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {teamMembers.length === 0 && (
+                        {teamMembers.length === 0 ? (
                           <TableRow>
                             <TableCell
                               colSpan={6}
                               className="py-6 text-center text-sm text-muted-foreground"
                             >
-                              No team members to display yet.
+                              No team members to display yet. Invite someone to get started!
                             </TableCell>
                           </TableRow>
+                        ) : (
+                          teamMembers.map((member) => (
+                            <TableRow key={member.id}>
+                              <TableCell className="font-medium">
+                                {member.name}
+                              </TableCell>
+                              <TableCell>{member.email}</TableCell>
+                              <TableCell>
+                                <Badge variant={member.role === "admin" ? "default" : "secondary"}>
+                                  {member.role === "admin" ? "Admin" : "Staff"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-green-600 border-green-600">
+                                  Active
+                                </Badge>
+                              </TableCell>
+                              <TableCell suppressHydrationWarning>
+                                {new Date(member.joinedAt).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    {member.role === "member" ? (
+                                      <DropdownMenuItem
+                                        onClick={() => handleChangeRole(member.id, "org:admin")}
+                                      >
+                                        Promote to Admin
+                                      </DropdownMenuItem>
+                                    ) : (
+                                      <DropdownMenuItem
+                                        onClick={() => handleChangeRole(member.id, "org:member")}
+                                      >
+                                        Demote to Staff
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleRemoveMember(member.id, member.name)}
+                                      className="text-red-600"
+                                    >
+                                      Remove from team
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))
                         )}
                       </TableBody>
                     </Table>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Invite Modal */}
+              {organisationId && (
+                <InviteTeamMemberModal
+                  open={inviteModalOpen}
+                  onOpenChange={setInviteModalOpen}
+                  organisationId={organisationId}
+                  onInviteSuccess={refreshTeamMembers}
+                />
+              )}
             </TabsContent>
           )}
         </Tabs>

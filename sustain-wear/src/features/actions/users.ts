@@ -126,6 +126,9 @@ export async function getAllUsers(): Promise<{
     ]);
 
     const clerkUsers = clerkUsersRes.data;
+    
+    console.log("getAllUsers - Clerk users found:", clerkUsers.length);
+    console.log("getAllUsers - DB users found:", dbUsers.length);
 
     // 2. Create maps for efficient lookups
     const dbUserMap = new Map<string, DbUser>(
@@ -239,6 +242,94 @@ export async function unsuspendUser(clerkUserId: string): Promise<{
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to unsuspend user.",
+    };
+  }
+}
+
+/**
+ * Syncs all Clerk users to the Prisma database.
+ * Creates missing users and updates existing ones with latest Clerk data.
+ */
+export async function syncClerkUsersToDatabase(): Promise<{
+  success: boolean;
+  synced: number;
+  created: number;
+  updated: number;
+  error?: string;
+}> {
+  try {
+    const clerk = await clerkClient();
+    const clerkUsersRes = await clerk.users.getUserList({ limit: 500 });
+    const clerkUsers = clerkUsersRes.data;
+
+    let created = 0;
+    let updated = 0;
+
+    for (const clerkUser of clerkUsers) {
+      const clerkId = clerkUser.id;
+      const email =
+        clerkUser.emailAddresses.find(
+          (e) => e.id === clerkUser.primaryEmailAddressId
+        )?.emailAddress || "no-email@unknown.com";
+      const name = `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || null;
+      
+      // Get role from Clerk private metadata, default to DONOR
+      const clerkRole = (clerkUser.privateMetadata?.role as string) || "DONOR";
+      const platformRole = Object.values(Role).includes(clerkRole as Role)
+        ? (clerkRole as Role)
+        : Role.DONOR;
+      
+      // Get defaultClerkOrganisationId from metadata if present
+      const defaultClerkOrganisationId =
+        (clerkUser.privateMetadata?.defaultClerkOrganisationID as string) || null;
+
+      // Check if user exists in DB
+      const existingUser = await prisma.user.findUnique({
+        where: { clerkUserId: clerkId },
+      });
+
+      if (existingUser) {
+        // Update existing user
+        await prisma.user.update({
+          where: { clerkUserId: clerkId },
+          data: {
+            email,
+            name,
+            platformRole,
+            defaultClerkOrganisationId,
+          },
+        });
+        updated++;
+      } else {
+        // Create new user
+        await prisma.user.create({
+          data: {
+            clerkUserId: clerkId,
+            email,
+            name,
+            platformRole,
+            defaultClerkOrganisationId,
+          },
+        });
+        created++;
+      }
+    }
+
+    console.log(`Sync complete: ${created} created, ${updated} updated`);
+    return {
+      success: true,
+      synced: clerkUsers.length,
+      created,
+      updated,
+    };
+  } catch (error) {
+    console.error("Error syncing users:", error);
+    return {
+      success: false,
+      synced: 0,
+      created: 0,
+      updated: 0,
+      error: error instanceof Error ? error.message : "Failed to sync users.",
     };
   }
 }

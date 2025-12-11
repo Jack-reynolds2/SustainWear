@@ -2,11 +2,12 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "../../../../prisma/client";
 import { ROLES } from "../../constants/roles";
+import { Role } from "@prisma/client";
 
 
 /**
  * Ensures the signed-in Clerk user exists in Prisma and returns the prisma user record.
- * Automatically assigns DONOR role by default.
+ * Syncs role from Clerk private metadata if available, otherwise defaults to DONOR.
  */
 export const initialiseNewUser = async () => {
   const clerkUser = await currentUser();
@@ -18,16 +19,29 @@ export const initialiseNewUser = async () => {
     clerkUser.primaryEmailAddress?.emailAddress ??
     null;
   const name = clerkUser.fullName ?? clerkUser.firstName ?? null;
+  
+  // Get role from Clerk private metadata, default to DONOR
+  const clerkRole = (clerkUser.privateMetadata?.role as string) || ROLES.DONOR;
+  // Validate it's a valid Role enum value
+  const platformRole = Object.values(Role).includes(clerkRole as Role) 
+    ? (clerkRole as Role) 
+    : Role.DONOR;
+  
+  // Get defaultClerkOrganisationId from metadata if present (check both key names for compatibility)
+  const defaultClerkOrganisationId = 
+    (clerkUser.privateMetadata?.defaultOrganisationId as string) || 
+    (clerkUser.privateMetadata?.defaultClerkOrganisationID as string) || 
+    null;
 
   const user = await prisma.user.upsert({
     where: { clerkUserId: clerkId },
-    update: { email, name },
+    update: { email, name, platformRole, defaultClerkOrganisationId },
     create: {
       clerkUserId: clerkId,
       email,
       name,
-      platformRole: ROLES.DONOR, // default to donor
-      defaultClerkOrganisationId: null,
+      platformRole,
+      defaultClerkOrganisationId,
     },
   });
 
@@ -51,6 +65,7 @@ export async function canCurrentUserViewTeam(): Promise<boolean> {
 /**
  * Get the Prisma user for the current session.
  * If the user doesn't exist in the database, it will be created automatically.
+ * If the user exists but data is stale, it will be synced from Clerk.
  */
 export const getPrismaUserFromClerk = async () => {
   const clerkUser = await currentUser();
@@ -64,6 +79,24 @@ export const getPrismaUserFromClerk = async () => {
   // If user doesn't exist, create them
   if (!dbUser) {
     dbUser = await initialiseNewUser();
+  } else {
+    // User exists - sync important fields from Clerk metadata
+    const clerkRole = (clerkUser.privateMetadata?.role as string) || ROLES.DONOR;
+    const platformRole = Object.values(Role).includes(clerkRole as Role) 
+      ? (clerkRole as Role) 
+      : Role.DONOR;
+    const defaultClerkOrganisationId = 
+      (clerkUser.privateMetadata?.defaultOrganisationId as string) || 
+      (clerkUser.privateMetadata?.defaultClerkOrganisationID as string) || 
+      null;
+    
+    // Update if role or org changed
+    if (dbUser.platformRole !== platformRole || dbUser.defaultClerkOrganisationId !== defaultClerkOrganisationId) {
+      dbUser = await prisma.user.update({
+        where: { clerkUserId: clerkUser.id },
+        data: { platformRole, defaultClerkOrganisationId },
+      });
+    }
   }
   
   return dbUser;

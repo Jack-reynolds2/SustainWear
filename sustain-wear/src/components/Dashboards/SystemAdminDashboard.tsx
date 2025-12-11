@@ -41,6 +41,7 @@ import { toast } from "sonner";
 import { Organisation } from "@prisma/client";
 import DeleteCharityModal from "../Modals/DeleteCharityModal";
 import DeleteUserModal from "../Modals/DeleteUserModal";
+import CharityDetailsModal from "../Modals/CharityDetailsModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,7 +55,9 @@ import {
   deleteUser,
   suspendUser,
   unsuspendUser,
+  syncClerkUsersToDatabase,
 } from "@/features/actions/users";
+import { RefreshCw } from "lucide-react";
 
 interface Props {
   initialApplications?: CharityApplication[];
@@ -92,6 +95,7 @@ export default function SystemAdminDashboard({
   const [users, setUsers] = useState<EnrichedUser[]>(initialUsers || []);
   const [deleteUserModalOpen, setDeleteUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<EnrichedUser | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Charity state
   const [applicationsOpen, setApplicationsOpen] = useState(false);
@@ -106,6 +110,13 @@ export default function SystemAdminDashboard({
   const [selectedCharity, setSelectedCharity] = useState<Organisation | null>(
     null
   );
+  
+  // Charity details modal state
+  const [charityDetailsOpen, setCharityDetailsOpen] = useState(false);
+  const [viewingCharity, setViewingCharity] = useState<Organisation | null>(null);
+  const [charityCredentials, setCharityCredentials] = useState<{
+    [charityId: string]: { loginEmail: string; tempPassword: string };
+  }>({});
 
   // Handle suspend/unsuspend charity
   const handleToggleCharitySuspend = async (charity: Organisation) => {
@@ -160,6 +171,30 @@ export default function SystemAdminDashboard({
         )
       );
       toast.error(result.error || `Failed to ${actionName.slice(0, -2)} user.`);
+    }
+  };
+
+  // Handle sync Clerk users to database
+  const handleSyncUsers = async () => {
+    setIsSyncing(true);
+    try {
+      const result = await syncClerkUsersToDatabase();
+      if (result.success) {
+        toast.success(
+          `Sync complete! ${result.created} created, ${result.updated} updated.`
+        );
+        // Refresh the users list
+        const refreshResult = await getAllUsers();
+        if (refreshResult.success && refreshResult.users) {
+          setUsers(refreshResult.users);
+        }
+      } else {
+        toast.error(result.error || "Failed to sync users.");
+      }
+    } catch (error) {
+      toast.error("An error occurred while syncing users.");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -288,6 +323,16 @@ export default function SystemAdminDashboard({
                       </SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Sync users button */}
+                  <Button
+                    variant="outline"
+                    onClick={handleSyncUsers}
+                    disabled={isSyncing}
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
+                    {isSyncing ? "Syncing..." : "Sync Users"}
+                  </Button>
 
                   {/* Placeholder for "New system admin" */}
                   <Button variant="outline">Invite system admin</Button>
@@ -464,11 +509,17 @@ export default function SystemAdminDashboard({
                       </TableRow>
                     )}
                     {filteredCharities.map((charity) => (
-                      <TableRow key={charity.id}>
+                      <TableRow 
+                        key={charity.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => {
+                          setViewingCharity(charity);
+                          setCharityDetailsOpen(true);
+                        }}
+                      >
                         <TableCell>{charity.name}</TableCell>
                         <TableCell>
-                          {/* Replace with actual contact when available */}
-                          <span className="text-muted-foreground">—</span>
+                          {charity.contactName || <span className="text-muted-foreground">—</span>}
                         </TableCell>
                         <TableCell>{charity.contactEmail}</TableCell>
                         <TableCell>
@@ -491,7 +542,7 @@ export default function SystemAdminDashboard({
                         <TableCell>
                           {new Date(charity.createdAt).toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
@@ -549,14 +600,43 @@ export default function SystemAdminDashboard({
 
               try {
                 const result = await approveCharityApplication(id);
+                console.log("Approval result:", result);
 
-                if (result.success && result.tempPassword && result.newOrganisation) {
-                  // On success, show detailed toast and update charities list
-                  toast.success("Charity approved successfully!", {
-                    description: `Login Email: ${application.contactEmail} | Temp Password: ${result.tempPassword}`,
-                    duration: 15000, // Show for 15 seconds
-                  });
-                  setCharities((prev) => [...prev, result.newOrganisation]);
+                if (result.success && result.newOrganisation) {
+                  // Store credentials for this charity if available
+                  console.log("tempPassword:", result.tempPassword);
+                  console.log("loginEmail:", result.loginEmail);
+                  
+                  if (result.tempPassword && result.loginEmail) {
+                    console.log("Storing credentials and opening modal");
+                    setCharityCredentials(prev => ({
+                      ...prev,
+                      [result.newOrganisation!.id]: { 
+                        loginEmail: result.loginEmail!, 
+                        tempPassword: result.tempPassword! 
+                      }
+                    }));
+                    
+                    // Automatically open the charity details modal to show credentials
+                    setViewingCharity(result.newOrganisation);
+                    setCharityDetailsOpen(true);
+                    setApplicationsOpen(false); // Close the applications modal
+                    
+                    // New user created - show credentials
+                    toast.success("Charity approved successfully!", {
+                      description: "View credentials in the modal",
+                      duration: 5000,
+                    });
+                  } else {
+                    console.log("No tempPassword - user already existed");
+                    // Existing user upgraded - no password to show
+                    toast.success("Charity approved successfully!", {
+                      description: `User ${result.loginEmail || application.contactEmail} has been upgraded to Charity Admin. They can log in with their existing password.`,
+                      duration: 10000,
+                    });
+                  }
+
+                  setCharities((prev) => [...prev, result.newOrganisation!]);
                 } else {
                   // On failure from the action, revert and show error
                   toast.error(
@@ -620,6 +700,13 @@ export default function SystemAdminDashboard({
                 );
               }
             }}
+          />
+
+          <CharityDetailsModal
+            open={charityDetailsOpen}
+            onOpenChange={setCharityDetailsOpen}
+            charity={viewingCharity}
+            credentials={viewingCharity ? charityCredentials[viewingCharity.id] : undefined}
           />
         </TabsContent>
 
