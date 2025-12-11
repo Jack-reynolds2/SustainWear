@@ -36,12 +36,14 @@ import {
   suspendCharity,
   unsuspendCharity,
   getAllCharities,
+  getAllCharitiesWithCounts,
+  CharityWithCounts,
 } from "@/features/actions/CharityApplication";
 import { toast } from "sonner";
 import { Organisation } from "@prisma/client";
 import DeleteCharityModal from "../Modals/DeleteCharityModal";
 import DeleteUserModal from "../Modals/DeleteUserModal";
-import CharityDetailsModal from "../Modals/CharityDetailsModal";
+import CharityManageModal from "../Modals/CharityManageModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,18 +63,11 @@ import { RefreshCw } from "lucide-react";
 
 interface Props {
   initialApplications?: CharityApplication[];
-  initialCharities?: Organisation[];
+  initialCharities?: CharityWithCounts[];
   initialUsers?: EnrichedUser[];
 }
 
-// Labels only – values will come from server data later
-const overviewStats = [
-  { label: "Total Users", value: null },
-  { label: "Total Charities", value: null },
-  { label: "Open Reports", value: null },
-  { label: "Pending Donations", value: null },
-];
-
+// Labels only – values will be calculated from data
 const reports: any[] = [];
 const auditLog: any[] = [];
 
@@ -102,24 +97,24 @@ export default function SystemAdminDashboard({
   const [applications, setApplications] = useState<CharityApplication[]>(
     initialApplications || []
   );
-  const [charities, setCharities] = useState<Organisation[]>(
+  const [charities, setCharities] = useState<CharityWithCounts[]>(
     initialCharities || []
   );
   const [charitySearch, setCharitySearch] = useState("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [selectedCharity, setSelectedCharity] = useState<Organisation | null>(
+  const [selectedCharity, setSelectedCharity] = useState<CharityWithCounts | null>(
     null
   );
   
   // Charity details modal state
   const [charityDetailsOpen, setCharityDetailsOpen] = useState(false);
-  const [viewingCharity, setViewingCharity] = useState<Organisation | null>(null);
+  const [viewingCharity, setViewingCharity] = useState<CharityWithCounts | null>(null);
   const [charityCredentials, setCharityCredentials] = useState<{
     [charityId: string]: { loginEmail: string; tempPassword: string };
   }>({});
 
   // Handle suspend/unsuspend charity
-  const handleToggleCharitySuspend = async (charity: Organisation) => {
+  const handleToggleCharitySuspend = async (charity: CharityWithCounts) => {
     const action = charity.suspended ? unsuspendCharity : suspendCharity;
     const actionName = charity.suspended ? "unsuspended" : "suspended";
 
@@ -261,20 +256,42 @@ export default function SystemAdminDashboard({
 
       {/* Overview cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {overviewStats.map((stat) => (
-          <Card key={stat.label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">
-                {stat.label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">
-                {stat.value === null ? "—" : stat.value}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{users.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Charities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{charities.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Pending Applications</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">
+              {applications.filter(a => a.status === "PENDING").length}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Active Charities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">
+              {charities.filter(c => c.approved && !c.suspended).length}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Main content tabs */}
@@ -532,12 +549,10 @@ export default function SystemAdminDashboard({
                           )}
                         </TableCell>
                         <TableCell>
-                          {/* Replace with staff count */}
-                          <span className="text-muted-foreground">—</span>
+                          {charity.staffCount}
                         </TableCell>
                         <TableCell>
-                          {/* Replace with donation count */}
-                          <span className="text-muted-foreground">—</span>
+                          {charity.donationCount}
                         </TableCell>
                         <TableCell>
                           {new Date(charity.createdAt).toLocaleDateString()}
@@ -607,6 +622,14 @@ export default function SystemAdminDashboard({
                   console.log("tempPassword:", result.tempPassword);
                   console.log("loginEmail:", result.loginEmail);
                   
+                  // Create the new charity with counts for modal
+                  const newCharityWithCounts: CharityWithCounts = {
+                    ...result.newOrganisation!,
+                    staffCount: 1, // The admin we just created
+                    donationCount: 0,
+                    _count: { donations: 0 },
+                  };
+                  
                   if (result.tempPassword && result.loginEmail) {
                     console.log("Storing credentials and opening modal");
                     setCharityCredentials(prev => ({
@@ -618,7 +641,7 @@ export default function SystemAdminDashboard({
                     }));
                     
                     // Automatically open the charity details modal to show credentials
-                    setViewingCharity(result.newOrganisation);
+                    setViewingCharity(newCharityWithCounts);
                     setCharityDetailsOpen(true);
                     setApplicationsOpen(false); // Close the applications modal
                     
@@ -636,7 +659,8 @@ export default function SystemAdminDashboard({
                     });
                   }
 
-                  setCharities((prev) => [...prev, result.newOrganisation!]);
+                  // Add the new charity with counts
+                  setCharities((prev) => [...prev, newCharityWithCounts]);
                 } else {
                   // On failure from the action, revert and show error
                   toast.error(
@@ -702,11 +726,16 @@ export default function SystemAdminDashboard({
             }}
           />
 
-          <CharityDetailsModal
+          <CharityManageModal
             open={charityDetailsOpen}
             onOpenChange={setCharityDetailsOpen}
             charity={viewingCharity}
             credentials={viewingCharity ? charityCredentials[viewingCharity.id] : undefined}
+            onStaffRemoved={async () => {
+              // Refresh charities to update staff count
+              const refreshed = await getAllCharitiesWithCounts();
+              setCharities(refreshed);
+            }}
           />
         </TabsContent>
 

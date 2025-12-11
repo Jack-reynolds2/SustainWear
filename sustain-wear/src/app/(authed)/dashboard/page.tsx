@@ -16,7 +16,7 @@ import {
 } from "@/features/donations/charityActions";
 import {
   getCharityApplications,
-  getApprovedCharities,
+  getAllCharitiesWithCounts,
 } from "@/features/actions/CharityApplication";
 import { getAllUsers } from "@/features/actions/users";
 import { getTeamMembers } from "@/features/actions/teamActions";
@@ -43,10 +43,8 @@ export default async function Page() {
   if (role === "ORG_STAFF" || role === "ORG_ADMIN") {
     // only ORG_ADMIN can see team tab
     const canViewTeam = role === "ORG_ADMIN";
-    const submittedDonations = await getSubmittedDonations();
-    const approvedDonations = await getApprovedDonations();
     
-    // Get the organisation for this user
+    // Get the organisation for this user first
     let organisationId: string | undefined;
     let teamMembers: Awaited<ReturnType<typeof getTeamMembers>> = [];
     
@@ -66,6 +64,10 @@ export default async function Page() {
       }
     }
     
+    // Fetch donations for this organisation (includes donations to all charities)
+    const submittedDonations = await getSubmittedDonations(organisationId);
+    const approvedDonations = await getApprovedDonations(organisationId);
+    
     return (
       <OuterShell>
         <CharityDashboard
@@ -84,12 +86,12 @@ export default async function Page() {
     // Fetch admin data in parallel
     const [applicationsResult, charitiesResult, usersResult] = await Promise.all([
       getCharityApplications(),
-      getApprovedCharities(),
+      getAllCharitiesWithCounts(),
       getAllUsers(),
     ]);
 
     const initialApplications = applicationsResult;
-    const approvedCharities = charitiesResult;
+    const initialCharities = charitiesResult;
     const initialUsers = usersResult.success ? usersResult.users : [];
 
     console.log("Dashboard - Users fetched:", initialUsers?.length);
@@ -98,7 +100,7 @@ export default async function Page() {
       <OuterShell>
         <SystemAdminDashboard
           initialApplications={initialApplications}
-          initialCharities={approvedCharities}
+          initialCharities={initialCharities}
           initialUsers={initialUsers}
         />
       </OuterShell>

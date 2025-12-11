@@ -28,7 +28,28 @@ export async function registerDonation(formData: FormData) {
   const clerkUser = await currentUser();
   if (!clerkUser) throw new Error("Not signed in");
 
-  const organisationId = process.env.DEFAULT_ORGANISATION_ID || "org_1";
+  // Get the selected charity ID from the form
+  const charitySelection = String(formData.get("charityId") ?? "");
+  
+  if (!charitySelection) {
+    throw new Error("Please select a charity or 'All Charities'");
+  }
+
+  // Handle "All Charities" option - organisationId will be undefined (null in DB)
+  let organisationId: string | undefined = undefined;
+  
+  if (charitySelection !== "ALL_CHARITIES") {
+    // Verify the specific organisation exists
+    const organisation = await prisma.organisation.findUnique({
+      where: { id: charitySelection },
+    });
+
+    if (!organisation || !organisation.approved) {
+      throw new Error("Invalid charity selected");
+    }
+    
+    organisationId = charitySelection;
+  }
 
   // Ensure current user exists in Prisma (find or create)
   let user = await prisma.user.findUnique({
@@ -88,7 +109,7 @@ export async function registerDonation(formData: FormData) {
   await prisma.donation.create({
     data: {
       id: crypto.randomUUID(),
-      organisationId,
+      organisationId: organisationId ?? null,
       donorUserId: user.id, // link to actual DB user
       title,
       description,
@@ -98,7 +119,7 @@ export async function registerDonation(formData: FormData) {
       imageUrl: imageUrl, // store image URL
       createdAt: new Date(),
       updatedAt: new Date(),
-    },
+    } as any,
   });
 
   return { ok: true }; // returns success response and value to the client
@@ -119,6 +140,16 @@ export async function getMyDonations() {
   // now fetch donations linked to that Prisma user
   return prisma.donation.findMany({
     where: { donorUserId: dbUser.id },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      category: true,
+      condition: true,
+      status: true,
+      imageUrl: true,
+      createdAt: true,
+    },
     orderBy: { createdAt: "desc" },
     take: 20,
   });
@@ -186,6 +217,60 @@ export async function updateDonation(formData: FormData) {
 
   // Redirect back to dashboard after update
   redirect("/dashboard");
+}
+
+// Action to update a donation from modal (no redirect)
+export async function updateDonationFromModal(formData: FormData) {
+  const clerkUser = await currentUser();
+  if (!clerkUser) throw new Error("Not signed in");
+
+  const id = String(formData.get("id"));
+
+  const dbUser = await prisma.user.findUnique({
+    where: { clerkUserId: clerkUser.id },
+  });
+
+  if (!dbUser) throw new Error("User not found");
+
+  const existing = await prisma.donation.findUnique({
+    where: { id },
+  });
+
+  if (!existing || existing.donorUserId !== dbUser.id) {
+    throw new Error("Donation not found or access denied");
+  }
+
+  // Only allow editing SUBMITTED donations
+  if (existing.status !== "SUBMITTED") {
+    throw new Error("Only pending donations can be edited");
+  }
+
+  const title = String(formData.get("itemName") ?? "");
+  const description = String(formData.get("description") ?? "");
+  const category = String(formData.get("category") ?? "");
+  const condition = String(formData.get("condition") ?? "");
+  const imageFile = formData.get("image") as File | null;
+
+  let imageUrl = existing.imageUrl;
+
+  if (imageFile && imageFile.size > 0) {
+    const uploaded = await uploadToCloudinary(imageFile);
+    imageUrl = uploaded.url;
+  }
+
+  await prisma.donation.update({
+    where: { id },
+    data: {
+      title,
+      description,
+      category: category as any,
+      condition: condition as any,
+      imageUrl: imageUrl,
+      updatedAt: new Date(),
+    },
+  });
+
+  return { ok: true };
 }
 
 // Server action to delete a donation

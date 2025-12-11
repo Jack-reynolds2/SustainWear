@@ -5,7 +5,7 @@ import SystemAdminDashboard from "@/components/Dashboards/SystemAdminDashboard";
 import React from "react";
 import {
   getCharityApplications,
-  getApprovedCharities,
+  getAllCharitiesWithCounts,
 } from "@/features/actions/CharityApplication";
 import { getAllUsers } from "@/features/actions/users";
 import { getPrismaUserFromClerk } from "@/features/auth/userRoles/helpers";
@@ -26,7 +26,7 @@ export default async function AdminPage() {
   // Fetch initial data in parallel
   const [applicationsResult, charitiesResult, usersResult] = await Promise.all([
     getCharityApplications(),
-    getApprovedCharities(),
+    getAllCharitiesWithCounts(),
     getAllUsers(),
   ]);
 
@@ -36,8 +36,8 @@ export default async function AdminPage() {
   // No extra mapping is needed here.
   const initialApplications = applicationsResult;
 
-  // Process approved charities
-  const approvedCharities = charitiesResult;
+  // Process charities with counts
+  const initialCharities = charitiesResult;
 
   // Process users
   const initialUsers = usersResult.success ? usersResult.users : [];
@@ -49,7 +49,7 @@ export default async function AdminPage() {
 
     <SystemAdminDashboard
       initialApplications={initialApplications}
-      initialCharities={approvedCharities}
+      initialCharities={initialCharities}
       initialUsers={initialUsers}
     />
     </main>

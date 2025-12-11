@@ -16,7 +16,7 @@ function Header() {
       </nav>
       <div>
         <SignedIn>
-          <UserButton afterSignOutUrl="/nonAuthed" />
+          <UserButton />
         </SignedIn>
       </div>
     </header>

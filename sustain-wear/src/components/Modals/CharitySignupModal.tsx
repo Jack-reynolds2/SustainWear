@@ -37,7 +37,17 @@ export default function CharitySignupModal({
       formData.append('contactEmail', contactEmail);
       if (website) formData.append('website', website);
       if (mission) formData.append('mission', mission);
-      await submitCharityRegistration(formData);
+      
+      const result = await submitCharityRegistration(formData);
+      
+      if (!result.success) {
+        // Show the specific error message from the server
+        toast.error(result.error || "Failed to submit application. Please try again.", {
+          duration: 8000, // Show for 8 seconds so user can read it
+        });
+        return;
+      }
+      
       toast.success("Charity application submitted successfully!");
       setOpen(false);
       // Reset form

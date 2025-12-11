@@ -2,13 +2,21 @@
 
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import DeleteButton from "@/components/ui/DeleteButton";
+import DonationViewModal from "@/components/Modals/DonationViewModal";
+import DonationEditModal from "@/components/Modals/DonationEditModal";
+import { updateDonationFromModal } from "@/features/actions/donateCRUD";
 
 type Donation = {
   id: string;
   title: string;
+  description?: string | null;
+  category: string;
+  condition: string;
   status: string;
+  imageUrl?: string | null;
   createdAt: string | Date;
 };
 
@@ -17,13 +25,56 @@ type DonorDashboardProps = {
 };
 
 // Donor dashboard component showing donation stats and history
-export default function DonorDashboard({ donations }: DonorDashboardProps) {
+export default function DonorDashboard({ donations: initialDonations }: DonorDashboardProps) {
+  const [donations, setDonations] = useState(initialDonations);
+  const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
   // Separate donations into pending and past
   const pending = donations.filter((d) => d.status === "SUBMITTED");
   const past = donations.filter((d) => d.status !== "SUBMITTED");
 
+  const handleViewDonation = (donation: Donation) => {
+    setSelectedDonation(donation);
+    setViewModalOpen(true);
+  };
+
+  const handleEditDonation = (donation: Donation) => {
+    setSelectedDonation(donation);
+    setEditModalOpen(true);
+  };
+
+  const handleEditFromView = () => {
+    setViewModalOpen(false);
+    setEditModalOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    // Refresh the page to get updated data
+    window.location.reload();
+  };
+
   return (
-    <div className="space-y-8">
+    <>
+      {/* View Modal */}
+      <DonationViewModal
+        open={viewModalOpen}
+        onOpenChange={setViewModalOpen}
+        donation={selectedDonation}
+        onEdit={handleEditFromView}
+      />
+
+      {/* Edit Modal */}
+      <DonationEditModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        donation={selectedDonation}
+        onSave={updateDonationFromModal}
+        onSuccess={handleEditSuccess}
+      />
+
+      <div className="space-y-8">
       {/* Header */}
       <section>
         <h1 className="text-3xl font-bold mb-2">Donor Dashboard</h1>
@@ -64,7 +115,7 @@ export default function DonorDashboard({ donations }: DonorDashboardProps) {
           href="/donor/donate"
           className="inline-block rounded-md bg-[#768755] px-5 py-2 text-sm font-medium text-white hover:bg-[#5d6944]"
         >
-          ← Back to Donate
+          Make a New Donation
         </Link>
       </div>
 
@@ -86,9 +137,14 @@ export default function DonorDashboard({ donations }: DonorDashboardProps) {
             <tbody>
               {pending.length ? (
                 pending.map((d) => (
-                  <tr key={d.id} className="border-t">
-                    {/* Item */}
-                    <td className="p-3">{d.title}</td>
+                  <tr key={d.id} className="border-t hover:bg-gray-50 cursor-pointer">
+                    {/* Item - clickable to view */}
+                    <td 
+                      className="p-3 text-blue-600 hover:underline"
+                      onClick={() => handleViewDonation(d)}
+                    >
+                      {d.title}
+                    </td>
 
                     {/* Date */}
                     <td className="p-3" suppressHydrationWarning>
@@ -97,12 +153,12 @@ export default function DonorDashboard({ donations }: DonorDashboardProps) {
 
                     {/* Edit */}
                     <td className="p-3">
-                      <Link
-                        href={`/donor/donate/${d.id}/edit`}
-                        className="text-sm text-blue-600 underline"
+                      <button
+                        onClick={() => handleEditDonation(d)}
+                        className="text-sm text-blue-600 underline hover:text-blue-800"
                       >
                         Edit
-                      </Link>
+                      </button>
                     </td>
 
                     {/* Delete */}
@@ -136,30 +192,35 @@ export default function DonorDashboard({ donations }: DonorDashboardProps) {
               <tr>
                 <th className="p-3 text-left font-medium">Item</th>
                 <th className="p-3 text-left font-medium">Date</th>
-                <th className="p-3 text-left font-medium">Edit</th>
+                <th className="p-3 text-left font-medium">View</th>
                 <th className="p-3 text-left font-medium">Status</th>
               </tr>
             </thead>
             <tbody>
               {past.length ? (
                 past.map((d) => (
-                  <tr key={d.id} className="border-t">
-                    {/* Item */}
-                    <td className="p-3">{d.title}</td>
+                  <tr key={d.id} className="border-t hover:bg-gray-50 cursor-pointer">
+                    {/* Item - clickable to view */}
+                    <td 
+                      className="p-3 text-blue-600 hover:underline"
+                      onClick={() => handleViewDonation(d)}
+                    >
+                      {d.title}
+                    </td>
 
                     {/* Date */}
                     <td className="p-3" suppressHydrationWarning>
                       {new Date(d.createdAt).toLocaleDateString()}
                     </td>
 
-                    {/* Edit */}
+                    {/* View */}
                     <td className="p-3">
-                      <Link
-                        href={`/donor/donate/${d.id}/edit`}
-                        className="text-sm text-blue-600 underline"
+                      <button
+                        onClick={() => handleViewDonation(d)}
+                        className="text-sm text-blue-600 underline hover:text-blue-800"
                       >
-                        Edit
-                      </Link>
+                        View
+                      </button>
                     </td>
 
                     {/* Status */}
@@ -181,5 +242,6 @@ export default function DonorDashboard({ donations }: DonorDashboardProps) {
         </div>
       </section>
     </div>
+    </>
   );
 }

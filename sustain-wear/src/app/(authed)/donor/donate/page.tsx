@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { registerDonation } from "../../../../features/actions/donateCRUD";
+import { getApprovedCharities } from "../../../../features/actions/CharityApplication";
+import { toast } from "sonner";
+
+type Charity = {
+  id: string;
+  name: string;
+};
 
 export default function DonatePage() {
   // Form state
@@ -14,10 +21,29 @@ export default function DonatePage() {
   const [category, setCategory] = useState("");
   const [condition, setCondition] = useState("");
   const [image, setImage] = useState<File | null>(null);
+  const [selectedCharity, setSelectedCharity] = useState("");
 
-  // State for submission status and success message
+  // Charities list
+  const [charities, setCharities] = useState<Charity[]>([]);
+  const [loadingCharities, setLoadingCharities] = useState(true);
+
+  // State for submission status
   const [submitting, setSubmitting] = useState(false);
-  const [showMessage, setShowMessage] = useState(false);
+
+  // Fetch charities on mount
+  useEffect(() => {
+    async function fetchCharities() {
+      try {
+        const data = await getApprovedCharities();
+        setCharities(data.map(c => ({ id: c.id, name: c.name })));
+      } catch (error) {
+        console.error("Failed to fetch charities:", error);
+      } finally {
+        setLoadingCharities(false);
+      }
+    }
+    fetchCharities();
+  }, []);
 
   // Handle form submission and call server action
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -29,11 +55,17 @@ export default function DonatePage() {
       const formData = new FormData(e.currentTarget);
       const res = await registerDonation(formData);
       if (res?.ok) {
-        setShowMessage(true);
-        setTimeout(() => setShowMessage(false), 4000);
+        toast.success("Donation submitted successfully!", {
+          description: selectedCharity === "ALL_CHARITIES" 
+            ? "Your donation is now visible to all charities."
+            : "The charity will review your donation shortly.",
+        });
+        // Reset the form
+        handleReset();
       }
     } catch (err) {
       console.error("Donation failed:", err);
+      toast.error("Failed to submit donation. Please try again.");
     } finally {
       // Keep the button disabled briefly to stop rapid resubmits
       setTimeout(() => setSubmitting(false), 500);
@@ -47,17 +79,11 @@ export default function DonatePage() {
     setCategory("");
     setCondition("");
     setImage(null);
+    setSelectedCharity("");
   };
 
   return (
     <>
-      {/* Success message */}
-      {showMessage && (
-        <div className="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-md shadow-md text-sm">
-          Donation submitted successfully
-        </div>
-      )}
-
       <main className="min-h-screen bg-white dark:bg-neutral-950 flex flex-col lg:flex-row items-center justify-center px-8 py-16 text-neutral-900 dark:text-neutral-100">
         {/* Left side */}
         <section className="flex-1 max-w-2xl mb-12 lg:mb-0 pr-8">
@@ -89,6 +115,44 @@ export default function DonatePage() {
 
           <SignedIn>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Charity Selection */}
+              <div>
+                <label className="block mb-1 font-medium">Donate to *</label>
+                <select
+                  name="charityId"
+                  value={selectedCharity}
+                  onChange={(e) => setSelectedCharity(e.target.value)}
+                  required
+                  disabled={loadingCharities}
+                  className="w-full border rounded-md p-2 dark:bg-neutral-800 dark:border-neutral-700"
+                >
+                  <option value="">
+                    {loadingCharities ? "Loading charities..." : "Select an option"}
+                  </option>
+                  <option value="ALL_CHARITIES">All Charities (visible to all)</option>
+                  {charities.length > 0 && (
+                    <option disabled className="text-gray-400">── Or select a specific charity ──</option>
+                  )}
+                  {charities.map((charity) => (
+                    <option key={charity.id} value={charity.id}>
+                      {charity.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {selectedCharity === "ALL_CHARITIES" 
+                    ? "Your donation will be visible to all charities on the platform."
+                    : selectedCharity 
+                      ? "Only the selected charity will see this donation."
+                      : "Choose 'All Charities' or select a specific charity."}
+                </p>
+                {!loadingCharities && charities.length === 0 && (
+                  <p className="text-sm text-amber-600 mt-1">
+                    No specific charities available. Your donation will be visible to all charities.
+                  </p>
+                )}
+              </div>
+
               {/* Item Name */}
               <div>
                 <label className="block mb-1 font-medium">Item Name</label>

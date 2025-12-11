@@ -44,7 +44,7 @@ model Organisation {
 
 model Donation {
   id                   String         @id @default(cuid())
-  organisationId       String
+  organisationId       String?
   donorUserId          String?
   title                String
   description          String?
@@ -63,7 +63,7 @@ model Donation {
   updatedAt            DateTime       @updatedAt
   imageUrl             String?
   donor                User?          @relation("DonorDonations", fields: [donorUserId], references: [id])
-  organisation         Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisation         Organisation?  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
   @@index([organisationId, status])
   @@index([donorUserId])
