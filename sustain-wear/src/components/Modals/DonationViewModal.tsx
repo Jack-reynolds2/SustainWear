@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Building2 } from "lucide-react";
 
 type Donation = {
   id: string;
@@ -19,6 +20,10 @@ type Donation = {
   status: string;
   imageUrl?: string | null;
   createdAt: string | Date;
+  organisation?: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 interface DonationViewModalProps {
@@ -95,6 +100,48 @@ export default function DonationViewModal({
               {donation.status.replace(/_/g, " ")}
             </Badge>
           </div>
+
+          {/* Charity that accepted - show for approved/shipped/received donations */}
+          {donation.organisation && ["APPROVED", "SHIPPED", "RECEIVED"].includes(donation.status) && (
+            <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                  Accepted by
+                </span>
+              </div>
+              <p className="mt-1 text-sm font-semibold text-green-900 dark:text-green-100">
+                {donation.organisation.name}
+              </p>
+            </div>
+          )}
+
+          {/* Pending charity - show for submitted/under review */}
+          {donation.organisation && ["SUBMITTED", "UNDER_REVIEW"].includes(donation.status) && (
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  Submitted to
+                </span>
+              </div>
+              <p className="mt-1 text-sm font-semibold text-blue-900 dark:text-blue-100">
+                {donation.organisation.name}
+              </p>
+            </div>
+          )}
+
+          {/* All Charities option */}
+          {!donation.organisation && ["SUBMITTED", "UNDER_REVIEW"].includes(donation.status) && (
+            <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Available to all charities
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Details Grid */}
           <div className="grid grid-cols-2 gap-4 text-sm">
