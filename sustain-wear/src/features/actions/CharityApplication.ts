@@ -120,7 +120,7 @@ export async function approveCharityApplication(applicationId: string) {
       skipPasswordChecks: true,
       privateMetadata: {
         role: "ORG_ADMIN",
-        defaultOrganisationId: org.id,
+        defaultClerkOrganisationId: org.id,
       },
     });
 
@@ -190,6 +190,17 @@ export async function approveCharityApplication(applicationId: string) {
         contactEmail: app.contactEmail,
         approved: true,
         slug: slug,
+      },
+    });
+
+    // Create the user record in our database with the correct org link
+    await prisma.user.create({
+      data: {
+        clerkUserId: clerkUserId,
+        email: email,
+        name: app.contactName || null,
+        platformRole: "ORG_ADMIN",
+        defaultClerkOrganisationId: org.id,
       },
     });
 
@@ -499,7 +510,7 @@ export async function removeCharityStaff(staffUserId: string): Promise<{
     await clerk.users.updateUserMetadata(user.clerkUserId, {
       privateMetadata: {
         role: "DONOR",
-        defaultOrganisationId: null,
+        defaultClerkOrganisationId: null,
       },
     });
 
