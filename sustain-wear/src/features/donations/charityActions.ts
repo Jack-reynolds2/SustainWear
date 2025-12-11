@@ -5,12 +5,26 @@ import { DonationStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
-export async function getSubmittedDonations() {
+/**
+ * Get submitted donations for a specific charity.
+ * Shows donations that are either:
+ * - Specifically assigned to this charity (organisationId matches)
+ * - Available to all charities (organisationId is null)
+ */
+export async function getSubmittedDonations(organisationId?: string) {
   try {
+    const whereClause = organisationId 
+      ? {
+          status: DonationStatus.SUBMITTED,
+          OR: [
+            { organisationId: organisationId },
+            { organisationId: { equals: null as unknown as undefined } },
+          ],
+        }
+      : { status: DonationStatus.SUBMITTED };
+
     const donations = await prisma.donation.findMany({
-      where: {
-        status: DonationStatus.SUBMITTED,
-      },
+      where: whereClause,
       include: {
         donor: true,
       },
@@ -25,12 +39,26 @@ export async function getSubmittedDonations() {
   }
 }
 
-export async function getApprovedDonations() {
+/**
+ * Get approved donations for a specific charity.
+ * Shows donations that are either:
+ * - Specifically assigned to this charity (organisationId matches)
+ * - Available to all charities (organisationId is null)
+ */
+export async function getApprovedDonations(organisationId?: string) {
   try {
+    const whereClause = organisationId 
+      ? {
+          status: DonationStatus.APPROVED,
+          OR: [
+            { organisationId: organisationId },
+            { organisationId: { equals: null as unknown as undefined } },
+          ],
+        }
+      : { status: DonationStatus.APPROVED };
+
     const donations = await prisma.donation.findMany({
-      where: {
-        status: DonationStatus.APPROVED,
-      },
+      where: whereClause,
       include: {
         donor: true,
       },

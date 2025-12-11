@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { inviteTeamMember } from "@/features/actions/teamActions";
+import { Eye, EyeOff, Copy, Check } from "lucide-react";
 
 interface InviteTeamMemberModalProps {
   open: boolean;
@@ -39,6 +40,50 @@ export default function InviteTeamMemberModal({
   const [name, setName] = useState("");
   const [role, setRole] = useState<"org:admin" | "org:member">("org:member");
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Credentials display state
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Auto-hide password after 5 seconds
+  useEffect(() => {
+    if (showPassword) {
+      const timer = setTimeout(() => {
+        setShowPassword(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showPassword]);
+
+  const copyToClipboard = async (text: string, field: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const handleClose = () => {
+    // Reset all state when closing
+    setShowCredentials(false);
+    setCredentials(null);
+    setShowPassword(false);
+    setEmail("");
+    setName("");
+    setRole("org:member");
+    onOpenChange(false);
+  };
+
+  const handleOpenChange = (isOpen: boolean) => {
+    // If showing credentials, don't allow closing via backdrop click or escape
+    // User must click "Done" button
+    if (showCredentials && !isOpen) {
+      return; // Prevent closing
+    }
+    if (!isOpen) {
+      handleClose();
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,18 +104,21 @@ export default function InviteTeamMemberModal({
       });
 
       if (result.success) {
-        toast.success("Team member invited successfully!", {
-          description: result.isNewUser 
-            ? `An account has been created for ${email}. They can log in with the temporary password.`
-            : `${email} has been added to your team.`,
-        });
-        
-        // Reset form
-        setEmail("");
-        setName("");
-        setRole("org:member");
-        onOpenChange(false);
-        onInviteSuccess();
+        console.log("Invite result:", result); // Debug log
+        if (result.isNewUser && result.tempPassword) {
+          // Show credentials for new user
+          console.log("Showing credentials for new user"); // Debug log
+          setCredentials({ email: email.trim(), password: result.tempPassword });
+          setShowCredentials(true);
+          toast.success("Team member account created!");
+          onInviteSuccess();
+        } else {
+          toast.success("Team member added!", {
+            description: `${email} has been added to your team.`,
+          });
+          onInviteSuccess();
+          handleClose();
+        }
       } else {
         toast.error(result.error || "Failed to invite team member");
       }
@@ -83,14 +131,110 @@ export default function InviteTeamMemberModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Invite team member</DialogTitle>
-          <DialogDescription>
-            Add a new member to your charity team. They&apos;ll receive access to manage donations.
-          </DialogDescription>
-        </DialogHeader>
+        {showCredentials && credentials ? (
+          // Show credentials after successful creation
+          <>
+            <DialogHeader>
+              <DialogTitle>Team member created</DialogTitle>
+              <DialogDescription>
+                Share these login credentials with your new team member. Make sure to copy the password now - it won&apos;t be shown again.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Email field */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Email</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={credentials.email}
+                    readOnly
+                    className="bg-muted"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(credentials.email, "email")}
+                  >
+                    {copiedField === "email" ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Password field */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Temporary Password</Label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={credentials.password}
+                      readOnly
+                      className="bg-muted pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(credentials.password, "password")}
+                  >
+                    {copiedField === "password" ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                {showPassword && (
+                  <p className="text-xs text-amber-600">
+                    Password will be hidden automatically in 5 seconds
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-md bg-amber-50 border border-amber-200 p-3">
+                <p className="text-sm text-amber-800">
+                  The team member should change their password after first login.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button onClick={handleClose}>
+                Done
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          // Show invite form
+          <>
+            <DialogHeader>
+              <DialogTitle>Invite team member</DialogTitle>
+              <DialogDescription>
+                Add a new member to your charity team. They&apos;ll receive access to manage donations.
+              </DialogDescription>
+            </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -139,7 +283,7 @@ export default function InviteTeamMemberModal({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={handleClose}
               disabled={isLoading}
             >
               Cancel
@@ -149,6 +293,8 @@ export default function InviteTeamMemberModal({
             </Button>
           </DialogFooter>
         </form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

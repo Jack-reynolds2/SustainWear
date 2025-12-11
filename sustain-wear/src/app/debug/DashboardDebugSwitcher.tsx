@@ -10,7 +10,11 @@ import SystemAdminDashboard from "@/components/Dashboards/SystemAdminDashboard";
 type Donation = {
   id: string;
   title: string;
+  description?: string | null;
+  category: string;
+  condition: string;
   status: string;
+  imageUrl?: string | null;
   createdAt: string | Date;
 };
 

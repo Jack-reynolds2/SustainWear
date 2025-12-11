@@ -50,14 +50,6 @@ type CharityDashboardProps = {
   initialTeamMembers?: TeamMember[];
 };
 
-// Labels only – values will come from server data later
-const overviewStats = [
-  { label: "Pending donations", value: null },
-  { label: "Under review", value: null },
-  { label: "Approved", value: null },
-  { label: "Declined", value: null },
-];
-
 export default function CharityDashboard({
   canViewTeam,
   donations,
@@ -148,20 +140,46 @@ export default function CharityDashboard({
 
         {/* Overview cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {overviewStats.map((stat) => (
-            <Card key={stat.label}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {stat.label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">
-                  {stat.value === null ? "—" : stat.value}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Submitted</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">
+                {donations.filter(d => d.status === "SUBMITTED").length}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Under review</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">
+                {donations.filter(d => d.status === "UNDER_REVIEW").length}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Approved</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">
+                {donations.filter(d => d.status === "APPROVED").length}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">
+                {donations.filter(d => d.status === "REJECTED").length}
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Main content tabs */}

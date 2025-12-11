@@ -13,10 +13,8 @@ export default async function Page() {
   const role: Role | "GUEST" = (dbUser?.platformRole as Role) ?? "GUEST";
 
   const canViewTeam = role === "ORG_ADMIN";
-  const submittedDonations = await getSubmittedDonations();
-  const approvedDonations = await getApprovedDonations();
   
-  // Get the organisation for this user
+  // Get the organisation for this user first
   let organisationId: string | undefined;
   let teamMembers: Awaited<ReturnType<typeof getTeamMembers>> = [];
   
@@ -32,6 +30,10 @@ export default async function Page() {
       }
     }
   }
+  
+  // Fetch donations for this organisation (includes donations to all charities)
+  const submittedDonations = await getSubmittedDonations(organisationId);
+  const approvedDonations = await getApprovedDonations(organisationId);
   
   return (
     <div>
